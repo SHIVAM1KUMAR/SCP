@@ -1,0 +1,76 @@
+:root {
+
+    /* Primary palette */
+    --primary: #3C5E93;
+    --primary-light: #7795CE;
+    --primary-dark: #2F4A73;
+  
+    /* Secondary */
+    --secondary: #393E61;
+  
+    /* Status colors */
+    --success: #28A745;
+    --danger: #DC3545;
+    --warning: #FFC107;
+    --info: #7795CE;
+  
+    /* Background */
+    --bg-default: #F0F4F8;
+    --bg-paper: #FFFFFF;
+  
+    /* Text */
+    --text-primary: #212529;
+    --text-secondary: #6C757D;
+  
+    /* UI */
+    --border-radius: 8px;
+  }
+
+
+  body {
+    background: var(--bg-default);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  
+  /* Buttons */
+  
+  .btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+  }
+  
+  /* Cards */
+  
+  .card {
+    border-radius: var(--border-radius);
+    border: 1px solid #e9ecef;
+  }
+  
+  /* Navbar */
+  
+  .navbar {
+    background-color: var(--primary);
+  }
+  
+  .navbar .nav-link {
+    color: white;
+  }
+  
+  /* Tables */
+  
+  .table thead {
+    background-color: var(--primary-light);
+    color: var(--primary);
+  }
+  
+  /* Form inputs */
+  
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(60, 94, 147, 0.25);
+  }
