@@ -71,7 +71,7 @@ const ALL_MENU_ITEMS = {
   SuperAdmin: [
     { moduleId: 1, label: "College Management",   icon: Icons.College,   path: "/superadmin/college"    },
     { moduleId: 2, label: "Intake Management",    icon: Icons.Intake,    path: "/superadmin/intake"     },
-    { moduleId: 3, label: "Student Registration", icon: Icons.Students,  path: "/superadmin/students"   },
+    { moduleId: 3, label: "Student Management", icon: Icons.Students,  path: "/superadmin/students"   },
     { moduleId: 4, label: "Admissions",           icon: Icons.Admission, path: "/superadmin/admissions" },
     {
       moduleId: 5, label: "User Management", icon: Icons.Users, path: "/superadmin/users",
@@ -87,13 +87,17 @@ const ALL_MENU_ITEMS = {
   Admin: [
     { moduleId: 1, label: "College Management",   icon: Icons.College,   path: "/admin/college"    },
     { moduleId: 2, label: "Intake Management",    icon: Icons.Intake,    path: "/admin/intake"     },
-    { moduleId: 3, label: "Student Registration", icon: Icons.Students,  path: "/admin/students"   },
+    { moduleId: 3, label: "Student Management", icon: Icons.Students,  path: "/admin/students"   },
     { moduleId: 4, label: "Admissions",           icon: Icons.Admission, path: "/admin/admissions" },
   ],
 
-  User: [
-    { moduleId: 4, label: "My Applications", icon: Icons.Admission, path: "/user/admissions" },
-    { moduleId: 1, label: "College List",    icon: Icons.College,   path: "/user/college"    },
+  Student: [
+    { moduleId: 1, label: "College List",    icon: Icons.College,   path: "/student/colleges" },
+    { moduleId: 4, label: "My Applications", icon: Icons.Admission, path: "/student/admissions" },
+  ],
+
+  College: [
+    { moduleId: 1, label: "Dashboard",       icon: Icons.College,   path: "/college/counselor" },
   ],
 };
 
@@ -103,7 +107,7 @@ const ALL_MENU_ITEMS = {
 const ENABLED_MODULE_IDS = [
   1,   // College Management
   // 2,   // Intake Management
-  // 3,   // Student Registration
+  3,   // Student Management
   // 4,   // Admissions
   // 5,   // User Management
   // 6,   // Reports
@@ -114,11 +118,12 @@ const ENABLED_MODULE_IDS = [
 // getMenuByRole — filters items by ENABLED_MODULE_IDS
 // ─────────────────────────────────────────────────────────────────────────────
 export const getMenuByRole = (role = "") => {
-  const items = ALL_MENU_ITEMS[role] || ALL_MENU_ITEMS.User;
+  const items = ALL_MENU_ITEMS[role] || ALL_MENU_ITEMS.Student;
   return items.filter(item => ENABLED_MODULE_IDS.includes(item.moduleId));
 };
 
 // Named exports for backward compat
 export const SuperAdminMenuItems = ALL_MENU_ITEMS.SuperAdmin.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
 export const AdminMenuItems      = ALL_MENU_ITEMS.Admin.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
-export const UserMenuItems       = ALL_MENU_ITEMS.User.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
+export const CollegeMenuItems    = ALL_MENU_ITEMS.College.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
+export const StudentMenuItems    = ALL_MENU_ITEMS.Student.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));

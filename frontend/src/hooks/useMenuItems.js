@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   SuperAdminMenuItems,
+  AdminMenuItems,
   CollegeMenuItems,
   StudentMenuItems,
 } from "../component/ui/drawer/MenuItems";
@@ -32,8 +33,9 @@ export const useMenuItems = () => {
     // Exact same as AmniCare
     const AllMenuItems =
       role === "SuperAdmin" ? SuperAdminMenuItems :
-      role === "College"    ? CollegeMenuItems    :
-      role === "Student"    ? StudentMenuItems     : [];
+      role === "Admin"      ? AdminMenuItems :
+      role === "College"    ? CollegeMenuItems :
+      role === "Student"    ? StudentMenuItems : [];
 
     const accessibleModuleIds = getAccessibleModuleIds(permissions);
     return getFilteredMenuItems(AllMenuItems, accessibleModuleIds, permissions);

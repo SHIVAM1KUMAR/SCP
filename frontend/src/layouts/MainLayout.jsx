@@ -28,7 +28,7 @@ export default function MainLayout() {
     <div style={{ display: "flex", minHeight: "100dvh", background: "#f4f6f9", fontFamily: "'Outfit', sans-serif" }}>
 
       <AdminAppBar open={open} handleDrawerOpen={() => setOpen(true)} />
-      <Sidebar     open={open} handleDrawerClose={() => setOpen(false)} />
+      <Sidebar     open={open} handleDrawerClose={() => setOpen(false)} handleDrawerOpen={() => setOpen(true)} />
 
       <main style={{
         flexGrow: 1, minWidth: 0,

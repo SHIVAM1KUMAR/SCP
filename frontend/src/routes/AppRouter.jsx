@@ -7,33 +7,62 @@ import { getAuth }           from "../store/slice/auth.slice";
 import MainLayout            from "../layouts/MainLayout";
 import AccountSettings       from "../pages/accountsetting/accountSetting";
 import CollegeManagement     from "../pages/collegemanagement/CollegeManagement";
+import StudentDashboard      from "../pages/students/StudentDashboard";
+import StudentManagement     from "../pages/students/StudentManagement";
 
 // Uncomment as you build each page:
 // import IntakeManagement    from "../pages/intake/IntakeManagement";
-// import StudentRegistration from "../pages/students/StudentRegistration";
 // import Admissions          from "../pages/admissions/Admissions";
 
-// ─── AppRouter ────────────────────────────────────────────────────────────────
-// Uses EXPLICIT absolute paths matching exactly what Login.jsx navigates to:
-//   SuperAdmin → /superadmin/college
-//   Admin      → /admin/college
-//   User       → /user/college
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ─── Shared "Coming Soon" ───────────────────────────────────────────────────
 const ComingSoon = () => (
   <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontFamily: "'Outfit', sans-serif", fontSize: 14 }}>
     This page is coming soon.
   </div>
 );
 
+// ─── Role-Based Route Definitions ───────────────────────────────────────────
+// Define routes based on access to isolate logic centrally instead of repeating.
+const ROLE_ROUTES = {
+  SuperAdmin: [
+    { index: true, element: <Navigate to="college" replace /> },
+    { path: "college",    element: <CollegeManagement /> },
+    { path: "intake",     element: <ComingSoon /> },
+    { path: "students",   element: <StudentManagement /> },
+    { path: "admissions", element: <ComingSoon /> },
+    { path: "users",      element: <ComingSoon /> },
+    { path: "roles",      element: <ComingSoon /> },
+    { path: "reports",    element: <ComingSoon /> },
+    { path: "settings",   element: <ComingSoon /> },
+  ],
+  Admin: [
+    { index: true, element: <Navigate to="college" replace /> },
+    { path: "college",    element: <CollegeManagement /> },
+    { path: "intake",     element: <ComingSoon /> },
+    { path: "students",   element: <StudentManagement /> },
+    { path: "admissions", element: <ComingSoon /> },
+  ],
+  College: [
+    { index: true, element: <Navigate to="counselor" replace /> },
+    { path: "counselor",  element: <ComingSoon /> },
+  ],
+  Student: [
+    { index: true, element: <Navigate to="colleges" replace /> },
+    { path: "colleges",   element: <StudentDashboard /> },
+    { path: "admissions", element: <ComingSoon /> },
+  ],
+};
+
 const AppRouter = () => {
   const { role } = getAuth();
+  
+  const currentRoleRoutes = ROLE_ROUTES[role] || ROLE_ROUTES.Student;
 
-  // First route per role — for root redirect
   const firstRoute =
     role === "SuperAdmin" ? "/superadmin/college" :
-    role === "Admin"      ? "/admin/college"      :
-                            "/user/college";
+    role === "Admin"      ? "/admin/college" :
+    role === "College"    ? "/college/counselor" :
+                            "/student/colleges";
 
   const routes = useRoutes([
     // ── Auth (public) routes ──────────────────────────────────────────────
@@ -41,55 +70,20 @@ const AppRouter = () => {
 
     // ── Protected routes ──────────────────────────────────────────────────
     {
-      path:    "/",
+      path: "/",
       element: <ProtectedRoute />,
       children: [
         {
           element: <MainLayout />,
           children: [
-
             // Root redirect → first allowed page
             { index: true, element: <Navigate to={firstRoute} replace /> },
 
-            // ── SuperAdmin routes ──────────────────────────────────────
+            // Dynamically load the correct route tree based on the user's role
             {
-              path: "superadmin",
+              path: (role || "user").toLowerCase(),
               element: <Outlet />,
-              children: [
-                { index: true, element: <Navigate to="college" replace /> },
-                { path: "college",    element: <CollegeManagement /> },
-                { path: "intake",     element: <ComingSoon /> },
-                { path: "students",   element: <ComingSoon /> },
-                { path: "admissions", element: <ComingSoon /> },
-                { path: "users",      element: <ComingSoon /> },
-                { path: "roles",      element: <ComingSoon /> },
-                { path: "reports",    element: <ComingSoon /> },
-                { path: "settings",   element: <ComingSoon /> },
-              ],
-            },
-
-            // ── Admin routes ───────────────────────────────────────────
-            {
-              path: "admin",
-              element: <Outlet />,
-              children: [
-                { index: true, element: <Navigate to="college" replace /> },
-                { path: "college",    element: <CollegeManagement /> },
-                { path: "intake",     element: <ComingSoon /> },
-                { path: "students",   element: <ComingSoon /> },
-                { path: "admissions", element: <ComingSoon /> },
-              ],
-            },
-
-            // ── User routes ────────────────────────────────────────────
-            {
-              path: "user",
-              element: <Outlet />,
-              children: [
-                { index: true, element: <Navigate to="college" replace /> },
-                { path: "college",    element: <CollegeManagement /> },
-                { path: "admissions", element: <ComingSoon /> },
-              ],
+              children: currentRoleRoutes,
             },
 
             // ── Shared routes ──────────────────────────────────────────

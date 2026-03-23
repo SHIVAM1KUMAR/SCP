@@ -83,7 +83,7 @@ function SidebarItem({ item, open, level = 0, onNavigate }) {
   );
 }
 
-function SidebarContent({ open, handleDrawerClose, menuItems, onNavigate }) {
+function SidebarContent({ open, handleDrawerClose, handleDrawerOpen, menuItems, onNavigate }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
@@ -110,7 +110,10 @@ function SidebarContent({ open, handleDrawerClose, menuItems, onNavigate }) {
         )}
 
         <button
-          onClick={handleDrawerClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            open ? handleDrawerClose() : handleDrawerOpen();
+          }}
           style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 6, padding: "5px 7px", cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", flexShrink: 0, transition: "background 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
           onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
@@ -130,7 +133,7 @@ function SidebarContent({ open, handleDrawerClose, menuItems, onNavigate }) {
   );
 }
 
-export default function Sidebar({ open, handleDrawerClose }) {
+export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 960);
 
@@ -179,8 +182,13 @@ export default function Sidebar({ open, handleDrawerClose }) {
   }
 
   return (
-    <div style={sidebarStyle}>
-      <SidebarContent open={open} handleDrawerClose={handleDrawerClose} menuItems={menuItems} onNavigate={handleNavigation} />
+    <div 
+      style={{ ...sidebarStyle, cursor: !open ? "pointer" : "default" }}
+      onClick={() => {
+        if (!open && handleDrawerOpen) handleDrawerOpen();
+      }}
+    >
+      <SidebarContent open={open} handleDrawerClose={handleDrawerClose} handleDrawerOpen={handleDrawerOpen} menuItems={menuItems} onNavigate={handleNavigation} />
     </div>
   );
 }

@@ -291,10 +291,8 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await login(email, password);
-      toast("Login successful! Redirecting...", "success");
-      if (res.role === "SuperAdmin")  navigate("/superadmin/college");
-      else if (res.role === "Admin")  navigate("/admin/college");
-      else                            navigate("/user/college");
+      toast("Login successful!", "success");
+      navigate("/");
     } catch {
       toast("Invalid email or password. Please try again.", "error");
     } finally {
