@@ -7,6 +7,7 @@ import { getAuth }           from "../store/slice/auth.slice";
 import MainLayout            from "../layouts/MainLayout";
 import AccountSettings       from "../pages/accountsetting/accountSetting";
 import CollegeManagement     from "../pages/collegemanagement/CollegeManagement";
+import CollegeRegistrationForm from "../component/forms/college/CollegeRegistrationForm";
 import StudentDashboard      from "../pages/students/StudentDashboard";
 import StudentManagement     from "../pages/students/StudentManagement";
 
@@ -67,6 +68,12 @@ const AppRouter = () => {
   const routes = useRoutes([
     // ── Auth (public) routes ──────────────────────────────────────────────
     ...AuthRoutes,
+
+    // ── Public Registration Route ─────────────────────────────────────────
+    {
+      path: "/college/register",
+      element: <CollegeRegistrationForm />
+    },
 
     // ── Protected routes ──────────────────────────────────────────────────
     {

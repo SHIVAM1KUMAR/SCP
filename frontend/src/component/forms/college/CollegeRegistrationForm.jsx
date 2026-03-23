@@ -343,7 +343,7 @@ export default function CollegeRegistrationForm() {
       if (files.affiliationCert)  fd.append("affiliationCert",  files.affiliationCert);
       if (files.registrationCert) fd.append("registrationCert", files.registrationCert);
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/colleges/register`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/colleges/register`, {
         method: "POST",
         body: fd,
       });
