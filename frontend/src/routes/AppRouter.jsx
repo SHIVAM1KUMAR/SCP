@@ -8,8 +8,9 @@ import MainLayout            from "../layouts/MainLayout";
 import AccountSettings       from "../pages/accountsetting/accountSetting";
 import CollegeManagement     from "../pages/collegemanagement/CollegeManagement";
 import CollegeRegistrationForm from "../component/forms/college/CollegeRegistrationForm";
-import StudentDashboard      from "../pages/students/StudentDashboard";
-import StudentManagement     from "../pages/students/StudentManagement";
+import StudentDashboard      from "../pages/studentmanagement/StudentDashboard";
+import StudentManagement     from "../pages/studentmanagement/StudentManagement";
+import Payments              from "../pages/payments/Payments";
 
 // Uncomment as you build each page:
 // import IntakeManagement    from "../pages/intake/IntakeManagement";
@@ -35,6 +36,7 @@ const ROLE_ROUTES = {
     { path: "roles",      element: <ComingSoon /> },
     { path: "reports",    element: <ComingSoon /> },
     { path: "settings",   element: <ComingSoon /> },
+    { path: "payments",   element: <Payments /> },
   ],
   Admin: [
     { index: true, element: <Navigate to="college" replace /> },
