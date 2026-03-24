@@ -68,6 +68,15 @@ export const registerCollege = async (req, res) => {
       if (req.files.logo) documents.logo = req.files.logo[0].path;
       if (req.files.affiliationCert) documents.affiliationCert = req.files.affiliationCert[0].path;
       if (req.files.registrationCert) documents.registrationCert = req.files.registrationCert[0].path;
+      if (req.files.paymentReceipt) documents.paymentReceipt = req.files.paymentReceipt[0].path;
+    }
+
+    let parsedCourses = [];
+    if (req.body.courses) {
+      try {
+        parsedCourses = JSON.parse(req.body.courses);
+      } catch (e) {
+      }
     }
 
     const existing = await College.findOne({ collegeCode });
@@ -88,8 +97,9 @@ export const registerCollege = async (req, res) => {
       address,
       bankDetails,
       documents,
+      courses: parsedCourses,
       status: "Pending",
-      paymentStatus: "Unpaid"
+      paymentStatus: documents.paymentReceipt ? "Uploaded" : "Unpaid"
     });
     
     await college.save();
@@ -176,5 +186,70 @@ export const toggleInterest = async (req, res) => {
     res.json({ message: index === -1 ? "Interest added" : "Interest removed", interestedColleges: student.interestedColleges });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const getPayments = async (req, res) => {
+  try {
+    const colleges = await College.find({
+      paymentStatus: { $in: ["Uploaded", "Verified", "Paid", "Pending", "Unpaid"] }
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, data: colleges });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const verifyPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const college = await College.findById(id);
+    if (!college) return res.status(404).json({ success: false, message: "College not found" });
+
+    if (college.status === "Active" && college.paymentStatus === "Verified") {
+      return res.status(400).json({ success: false, message: "College is already verified and active" });
+    }
+
+    college.paymentStatus = "Verified";
+    
+    // Auto-activate since payment is verified
+    college.status = "Active";
+
+    if (!college.password) {
+      const rawPassword = Math.random().toString(36).slice(-8);
+      const salt = await bcrypt.genSalt(10);
+      college.password = await bcrypt.hash(rawPassword, salt);
+      await sendCollegeCredentialsEmail(college.email, rawPassword);
+    }
+    
+    await college.save();
+    res.json({ success: true, message: "Payment verified and college activated successfully", data: college });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const updateCollege = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let parsedCourses = req.body.courses;
+    if (typeof parsedCourses === "string") {
+      try {
+        parsedCourses = JSON.parse(parsedCourses);
+      } catch (e) {
+        // ignore
+      }
+    }
+    
+    const updateData = { ...req.body };
+    if (parsedCourses) {
+       updateData.courses = parsedCourses;
+    }
+
+    const college = await College.findByIdAndUpdate(id, updateData, { new: true });
+    if (!college) return res.status(404).json({ success: false, message: "College not found" });
+    res.json({ success: true, message: "College updated successfully", data: college });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };

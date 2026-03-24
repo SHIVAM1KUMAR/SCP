@@ -4,7 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { getColleges, toggleInterest } from "../../api/collegeApi";
 import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || "http://localhost:5000");
+const socket = io(import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || import.meta.env.VITE_API_URL);
 
 export default function StudentDashboard() {
   const toast = useToast();

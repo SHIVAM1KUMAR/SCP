@@ -59,7 +59,7 @@ export default function ActivateCollegeModal({ college, onClose, onActivate, onR
   ) : null;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.20)", fontFamily: "'Outfit', sans-serif" }}>
 
         {/* Header */}
@@ -75,7 +75,7 @@ export default function ActivateCollegeModal({ college, onClose, onActivate, onR
         <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
             {college.documents?.logo
-              ? <img src={`http://localhost:5000/${college.documents.logo}`} alt="logo" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "contain", border: "1px solid #e2e8f0", background: "#fff" }} />
+              ? <img src={`${API}/${college.documents.logo}`} alt="logo" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "contain", border: "1px solid #e2e8f0", background: "#fff" }} />
               : <div style={{ width: 52, height: 52, borderRadius: 10, background: "#e8f4fd", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏫</div>
             }
             <div>
@@ -100,13 +100,13 @@ export default function ActivateCollegeModal({ college, onClose, onActivate, onR
           {(college.documents?.affiliationCert || college.documents?.registrationCert) && (
             <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
               {college.documents.affiliationCert && (
-                <a href={`http://localhost:5000/${college.documents.affiliationCert}`} target="_blank" rel="noreferrer"
+                <a href={`${API}/${college.documents.affiliationCert}`} target="_blank" rel="noreferrer"
                   style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 500 }}>
                   📄 Affiliation Cert
                 </a>
               )}
               {college.documents.registrationCert && (
-                <a href={`http://localhost:5000/${college.documents.registrationCert}`} target="_blank" rel="noreferrer"
+                <a href={`${API}/${college.documents.registrationCert}`} target="_blank" rel="noreferrer"
                   style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 500 }}>
                   📄 Registration Cert
                 </a>

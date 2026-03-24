@@ -72,6 +72,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 1, label: "College Management",   icon: Icons.College,   path: "/superadmin/college"    },
     { moduleId: 2, label: "Intake Management",    icon: Icons.Intake,    path: "/superadmin/intake"     },
     { moduleId: 3, label: "Student Management", icon: Icons.Students,  path: "/superadmin/students"   },
+    { moduleId: 10, label: "Payments",            icon: Icons.Reports,   path: "/superadmin/payments"   },
     { moduleId: 4, label: "Admissions",           icon: Icons.Admission, path: "/superadmin/admissions" },
     {
       moduleId: 5, label: "User Management", icon: Icons.Users, path: "/superadmin/users",
@@ -108,6 +109,7 @@ const ENABLED_MODULE_IDS = [
   1,   // College Management
   // 2,   // Intake Management
   3,   // Student Management
+  10,  // Payments
   // 4,   // Admissions
   // 5,   // User Management
   // 6,   // Reports

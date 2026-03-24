@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../../context/ToastContext";
 import ActivateCollegeModal from "./activateCollege";
 import CollegeDetails       from "./collegeDetails";
+import CollegeRegistrationForm from "../../component/forms/college/CollegeRegistrationForm";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function authHeader() {
@@ -102,6 +103,7 @@ export default function CollegeManagement() {
   const [activateTarget, setActivateTarget] = useState(null);  // college to activate/reject
   const [detailTarget,   setDetailTarget]   = useState(null);  // college to view
   const [deleteTarget,   setDeleteTarget]   = useState(null);  // college to delete
+  const [showRegForm,    setShowRegForm]    = useState(false);
 
   const totalPages = Math.ceil(total / rowsPerPage);
 
@@ -211,10 +213,10 @@ export default function CollegeManagement() {
                 style={{ paddingLeft: 30, paddingRight: 12, height: 36, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "'Outfit', sans-serif", color: "#1e293b", outline: "none", width: 210, background: "#fff" }}
                 onFocus={e => (e.target.style.borderColor = "#1a6fa8")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
             </div>
-            <a href="/college/register" target="_blank"
-              style={{ height: 36, padding: "0 16px", background: "#f8fafc", color: "#1a6fa8", border: "1.5px solid #1a6fa8", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "'Outfit', sans-serif", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>
+            <button onClick={() => setShowRegForm(true)}
+              style={{ height: 36, padding: "0 16px", background: "#f8fafc", color: "#1a6fa8", border: "1.5px solid #1a6fa8", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "'Outfit', sans-serif", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
               🔗 Reg. Form
-            </a>
+            </button>
           </div>
         </div>
 
@@ -256,6 +258,8 @@ export default function CollegeManagement() {
                 </td></tr>
               ) : colleges.map((c, i) => (
                 <tr key={c._id}
+                  onClick={() => setDetailTarget(c)}
+                  style={{ cursor: "pointer" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "#fafbfc")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   <td style={{ ...td, color: "#94a3b8", width: 40 }}>{(page - 1) * rowsPerPage + i + 1}</td>
@@ -277,14 +281,8 @@ export default function CollegeManagement() {
                   <td style={td}><StatusBadge status={c.status} /></td>
                   <td style={td}><PayBadge status={c.paymentStatus} /></td>
                   <td style={{ ...td, color: "#94a3b8", fontSize: 12.5 }}>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN") : "—"}</td>
-                  <td style={{ ...td, textAlign: "center" }}>
-                    <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "wrap" }}>
-
-                      {/* View */}
-                      <button onClick={() => setDetailTarget(c)} title="View Details"
-                        style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "6px 10px", cursor: "pointer", color: "#475569", display: "flex", alignItems: "center" }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx={12} cy={12} r={3} /></svg>
-                      </button>
+                  <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
+                    <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "nowrap" }} onClick={e => e.stopPropagation()}>
 
                       {/* Activate/Reject (only for Pending) */}
                       {c.status === "Pending" && (
@@ -352,6 +350,15 @@ export default function CollegeManagement() {
         <CollegeDetails
           college={detailTarget}
           onClose={() => setDetailTarget(null)}
+          onUpdate={(updatedCollege) => {
+            setColleges(prev => prev.map(c => c._id === updatedCollege._id ? updatedCollege : c));
+            setDetailTarget(updatedCollege);
+          }}
+          onDelete={(id) => {
+            setColleges(prev => prev.filter(c => c._id !== id));
+            fetchStats();
+            setDetailTarget(null);
+          }}
         />
       )}
       {deleteTarget && (
@@ -361,6 +368,7 @@ export default function CollegeManagement() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+      {showRegForm && <CollegeRegistrationForm onClose={() => setShowRegForm(false)} />}
     </div>
   );
 }
