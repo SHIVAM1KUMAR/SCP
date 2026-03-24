@@ -380,7 +380,7 @@ export default function CollegeRegistrationForm({ onClose }) {
       if (files.registrationCert) fd.append("registrationCert", files.registrationCert);
       if (files.paymentReceipt)   fd.append("paymentReceipt",   files.paymentReceipt);
 
-      const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || "http://localhost:5000";
+      const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '');
       const res = await fetch(`${API_URL}/colleges/register`, {
         method: "POST",
         body: fd,

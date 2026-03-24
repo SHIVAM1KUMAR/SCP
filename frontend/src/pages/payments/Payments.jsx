@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../../context/ToastContext";
 
-const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '');
 const BASE_URL = API.replace(/\/api\/?$/, "");
 
 function authHeader() {

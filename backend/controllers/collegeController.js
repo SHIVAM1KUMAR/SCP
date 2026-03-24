@@ -228,3 +228,28 @@ export const verifyPayment = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
+
+export const updateCollege = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let parsedCourses = req.body.courses;
+    if (typeof parsedCourses === "string") {
+      try {
+        parsedCourses = JSON.parse(parsedCourses);
+      } catch (e) {
+        // ignore
+      }
+    }
+    
+    const updateData = { ...req.body };
+    if (parsedCourses) {
+       updateData.courses = parsedCourses;
+    }
+
+    const college = await College.findByIdAndUpdate(id, updateData, { new: true });
+    if (!college) return res.status(404).json({ success: false, message: "College not found" });
+    res.json({ success: true, message: "College updated successfully", data: college });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};

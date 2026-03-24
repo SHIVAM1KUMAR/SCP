@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { getColleges, getCollegeStats, activateCollege, rejectCollege, deleteCollege, toggleInterest, registerCollege } from "../controllers/collegeController.js";
+import { getColleges, getCollegeStats, activateCollege, rejectCollege, deleteCollege, toggleInterest, registerCollege, updateCollege } from "../controllers/collegeController.js";
 
 const router = express.Router();
 
@@ -21,6 +21,7 @@ router.get("/", getColleges);
 router.post("/:id/activate", activateCollege);
 router.post("/:id/reject", rejectCollege);
 router.post("/:id/interest", toggleInterest);
+router.put("/:id", updateCollege);
 router.delete("/:id", deleteCollege);
 
 // Superadmin payment routes

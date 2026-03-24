@@ -4,7 +4,7 @@ import ActivateCollegeModal from "./activateCollege";
 import CollegeDetails       from "./collegeDetails";
 import CollegeRegistrationForm from "../../component/forms/college/CollegeRegistrationForm";
 
-const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function authHeader() {
@@ -258,6 +258,8 @@ export default function CollegeManagement() {
                 </td></tr>
               ) : colleges.map((c, i) => (
                 <tr key={c._id}
+                  onClick={() => setDetailTarget(c)}
+                  style={{ cursor: "pointer" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "#fafbfc")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   <td style={{ ...td, color: "#94a3b8", width: 40 }}>{(page - 1) * rowsPerPage + i + 1}</td>
@@ -280,13 +282,7 @@ export default function CollegeManagement() {
                   <td style={td}><PayBadge status={c.paymentStatus} /></td>
                   <td style={{ ...td, color: "#94a3b8", fontSize: 12.5 }}>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN") : "—"}</td>
                   <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
-                    <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "nowrap" }}>
-
-                      {/* View */}
-                      <button onClick={() => setDetailTarget(c)} title="View Details"
-                        style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "6px 10px", cursor: "pointer", color: "#475569", display: "flex", alignItems: "center" }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx={12} cy={12} r={3} /></svg>
-                      </button>
+                    <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "nowrap" }} onClick={e => e.stopPropagation()}>
 
                       {/* Activate/Reject (only for Pending) */}
                       {c.status === "Pending" && (
@@ -354,6 +350,15 @@ export default function CollegeManagement() {
         <CollegeDetails
           college={detailTarget}
           onClose={() => setDetailTarget(null)}
+          onUpdate={(updatedCollege) => {
+            setColleges(prev => prev.map(c => c._id === updatedCollege._id ? updatedCollege : c));
+            setDetailTarget(updatedCollege);
+          }}
+          onDelete={(id) => {
+            setColleges(prev => prev.filter(c => c._id !== id));
+            fetchStats();
+            setDetailTarget(null);
+          }}
         />
       )}
       {deleteTarget && (
