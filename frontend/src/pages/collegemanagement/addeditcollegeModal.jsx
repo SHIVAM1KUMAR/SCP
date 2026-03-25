@@ -1,28 +1,28 @@
 import { useRef, useState } from "react";
 import CollegeRegistrationForm from "../../component/forms/college/CollegeRegistrationForm";
+import Loader from "../../component/ui/loader/Loader";
 
 const AddEditCollegeModal = ({
   open,
   onClose,
-  onSubmit,
   college = null,
   isLoading = false,
 }) => {
   const isEdit = Boolean(college);
   const formRef = useRef(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const isLastStep = activeStep === totalSteps - 1;
+  const busy = isLoading || submitting;
 
   if (!open) return null;
 
   const handleNext = async () => {
     if (formRef.current?.handleNext) {
       const success = await formRef.current.handleNext();
-      if (success) {
-        setActiveStep((prev) => prev + 1);
-      }
+      if (success) setActiveStep((prev) => prev + 1);
     } else {
       setActiveStep((prev) => prev + 1);
     }
@@ -32,25 +32,28 @@ const AddEditCollegeModal = ({
     if (formRef.current?.handleBack) {
       formRef.current.handleBack();
     }
-    setActiveStep((prev) => prev - 1);
+    setActiveStep((prev) => Math.max(0, prev - 1));
   };
 
-  const handleSubmit = () => {
-    if (formRef.current?.submitForm) {
-      formRef.current.submitForm();
+  const handleSubmit = async () => {
+    if (!formRef.current?.submitForm) return;
+
+    setSubmitting(true);
+    try {
+      await formRef.current.submitForm();
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div 
-      className="modal show d-block" 
-      tabIndex="-1" 
+    <div
+      className="modal show d-block"
+      tabIndex="-1"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
     >
       <div className="modal-dialog modal-xl modal-dialog-centered">
         <div className="modal-content">
-
-          {/* Header */}
           <div className="modal-header border-0 pb-2">
             <h5 className="modal-title fw-semibold">
               {isEdit ? "Edit College" : "Add College"}
@@ -59,17 +62,14 @@ const AddEditCollegeModal = ({
               type="button"
               className="btn-close"
               onClick={onClose}
-              disabled={isLoading}
-            ></button>
+              disabled={busy}
+            />
           </div>
 
-          {/* Body */}
           <div className="modal-body pt-0">
-
-            {/* Step Progress Indicator */}
             <div className="mb-4">
               <div className="d-flex justify-content-between small text-muted mb-2">
-                {[1, 2, 3, 4].map((step, index) => (
+                {[1, 2, 3, 4, 5].map((step, index) => (
                   <span
                     key={index}
                     className={`fw-medium ${activeStep === index ? "text-primary" : ""}`}
@@ -78,33 +78,27 @@ const AddEditCollegeModal = ({
                   </span>
                 ))}
               </div>
-              <div className="progress" style={{ height: "8px" }}>
+              <div className="progress" style={{ height: 8 }}>
                 <div
                   className="progress-bar bg-primary"
-                  style={{
-                    width: `${((activeStep + 1) / totalSteps) * 100}%`,
-                  }}
+                  style={{ width: `${((activeStep + 1) / totalSteps) * 100}%` }}
                 />
               </div>
             </div>
 
-            {/* Form Component */}
             <CollegeRegistrationForm
-  ref={formRef}
-  defaultValues={college}   // 🔥 important
-  onClose={onClose}
-  collegeId={selectedCollege?._id}
-  college={selectedCollege}
-
-/>
+              ref={formRef}
+              college={college}
+              collegeId={college?._id || null}
+              onClose={onClose}
+            />
           </div>
 
-          {/* Footer with Actions */}
           <div className="modal-footer border-0 pt-0 d-flex justify-content-between">
             <button
               className="btn btn-outline-secondary px-4"
               onClick={onClose}
-              disabled={isLoading}
+              disabled={busy}
             >
               Cancel
             </button>
@@ -113,7 +107,7 @@ const AddEditCollegeModal = ({
               <button
                 className="btn btn-outline-secondary px-4 me-3"
                 onClick={handleBack}
-                disabled={activeStep === 0 || isLoading}
+                disabled={activeStep === 0 || busy}
               >
                 Back
               </button>
@@ -122,31 +116,28 @@ const AddEditCollegeModal = ({
                 <button
                   className="btn btn-success px-4"
                   onClick={handleSubmit}
-                  disabled={isLoading}
+                  disabled={busy}
                 >
-                  {isLoading ? (
+                  {busy ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" />
+                      <Loader size={16} color="inherit" />
                       Saving...
                     </>
-                  ) : isEdit ? (
-                    "Update"
                   ) : (
-                    "Save"
+                    isEdit ? "Update" : "Save"
                   )}
                 </button>
               ) : (
                 <button
                   className="btn btn-primary px-4"
                   onClick={handleNext}
-                  disabled={isLoading}
+                  disabled={busy}
                 >
                   Next
                 </button>
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -6,6 +6,14 @@ export const useColleges = (collegeId = null) => {
   const queryClient = useQueryClient();
   const toast = useToast();
 
+  const refreshCollegeData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["colleges"] }),
+      queryClient.invalidateQueries({ queryKey: ["payments"] }),
+      collegeId ? queryClient.invalidateQueries({ queryKey: ["college", collegeId] }) : Promise.resolve(),
+    ]);
+  };
+
   // ─── Register College ───────────────────────────
   const registerCollegeMutation = useMutation({
     mutationFn: async (payload) => {
@@ -14,8 +22,6 @@ export const useColleges = (collegeId = null) => {
     },
     onSuccess: () => {
       toast("College registered successfully", "success");
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Registration failed", "error"),
@@ -29,12 +35,6 @@ export const useColleges = (collegeId = null) => {
     },
     onSuccess: () => {
       toast("College activated successfully", "success");
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-
-      if (collegeId) {
-        queryClient.invalidateQueries({ queryKey: ["college", collegeId] });
-      }
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Activation failed", "error"),
@@ -48,8 +48,6 @@ export const useColleges = (collegeId = null) => {
     },
     onSuccess: () => {
       toast("College rejected", "warning");
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Rejection failed", "error"),
@@ -63,8 +61,6 @@ export const useColleges = (collegeId = null) => {
     },
     onSuccess: () => {
       toast("College deleted", "warning");
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Delete failed", "error"),
@@ -78,7 +74,6 @@ export const useColleges = (collegeId = null) => {
     },
     onSuccess: () => {
       toast("Interest updated", "info");
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Failed to update interest", "error"),
@@ -87,32 +82,13 @@ export const useColleges = (collegeId = null) => {
   // ─── Update College (with file upload support) ───
   const updateCollegeMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
-      const formData = new FormData();
-
-      // Append normal fields
-      Object.keys(payload).forEach((key) => {
-        if (key !== "docs") {
-          formData.append(key, payload[key]);
-        }
-      });
-
-      // Append files if present
-      if (payload.docs && payload.docs.length > 0) {
-        payload.docs.forEach((file) => formData.append("docs", file));
-      }
-
-      const res = await axiosInstance.put(`/colleges/${id}`, formData, {
+      const res = await axiosInstance.put(`/colleges/${id}`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return res.data;
     },
     onSuccess: () => {
       toast("College updated successfully", "success");
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
-
-      if (collegeId) {
-        queryClient.invalidateQueries({ queryKey: ["college", collegeId] });
-      }
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Update failed", "error"),
@@ -138,7 +114,7 @@ export const useColleges = (collegeId = null) => {
   });
 
   // ─── Get Single College ─────────────────────────
-  const { data: college, isLoading: isCollegeLoading, isError: isCollegeError } = useQuery({
+  const { data: college, isLoading: isCollegeLoading, isError: isCollegeError, refetch: collegeRefetch } = useQuery({
     queryKey: ["college", collegeId],
     enabled: !!collegeId,
     queryFn: async () => {
@@ -164,8 +140,6 @@ export const useColleges = (collegeId = null) => {
     },
     onSuccess: () => {
       toast("Payment verified successfully", "success");
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["colleges"] });
     },
     onError: (err) =>
       toast(err?.response?.data?.message || "Verification failed", "error"),
@@ -173,25 +147,78 @@ export const useColleges = (collegeId = null) => {
 
   return {
     // ─── Mutations ─────────────────────────
-    registerCollege: registerCollegeMutation.mutate,
+    registerCollege: async (payload) => {
+      const result = await registerCollegeMutation.mutateAsync(payload);
+      await refreshCollegeData();
+      return result;
+    },
     isRegisteringCollege: registerCollegeMutation.isPending,
 
-    activateCollege: activateCollegeMutation.mutate,
+    activateCollege: async (args) => {
+      const result = await activateCollegeMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
+    activateCollegeAsync: async (args) => {
+      const result = await activateCollegeMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
     isActivatingCollege: activateCollegeMutation.isPending,
 
-    rejectCollege: rejectCollegeMutation.mutate,
+    rejectCollege: async (args) => {
+      const result = await rejectCollegeMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
+    rejectCollegeAsync: async (args) => {
+      const result = await rejectCollegeMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
     isRejectingCollege: rejectCollegeMutation.isPending,
 
-    deleteCollege: deleteCollegeMutation.mutate,
+    deleteCollege: async (id) => {
+      const result = await deleteCollegeMutation.mutateAsync(id);
+      await refreshCollegeData();
+      return result;
+    },
+    deleteCollegeAsync: async (id) => {
+      const result = await deleteCollegeMutation.mutateAsync(id);
+      await refreshCollegeData();
+      return result;
+    },
     isDeletingCollege: deleteCollegeMutation.isPending,
 
-    toggleInterest: toggleInterestMutation.mutate,
+    toggleInterest: async (id) => {
+      const result = await toggleInterestMutation.mutateAsync(id);
+      await refreshCollegeData();
+      return result;
+    },
+    toggleInterestAsync: async (id) => {
+      const result = await toggleInterestMutation.mutateAsync(id);
+      await refreshCollegeData();
+      return result;
+    },
     isTogglingInterest: toggleInterestMutation.isPending,
 
-    updateCollege: updateCollegeMutation.mutate,
+    updateCollege: async (args) => {
+      const result = await updateCollegeMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
     isUpdatingCollege: updateCollegeMutation.isPending,
 
-    verifyPayment: verifyPaymentMutation.mutate,
+    verifyPayment: async (args) => {
+      const result = await verifyPaymentMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
+    verifyPaymentAsync: async (args) => {
+      const result = await verifyPaymentMutation.mutateAsync(args);
+      await refreshCollegeData();
+      return result;
+    },
     isVerifyingPayment: verifyPaymentMutation.isPending,
 
     // ─── Queries ───────────────────────────
@@ -207,6 +234,7 @@ export const useColleges = (collegeId = null) => {
     college,
     isCollegeLoading,
     isCollegeError,
+    fetchCollege: collegeRefetch,
 
     payments: payments || [],
     isLoadingPayments,

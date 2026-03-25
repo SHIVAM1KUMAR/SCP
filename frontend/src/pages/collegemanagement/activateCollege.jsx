@@ -1,10 +1,12 @@
 import { useState } from "react";
+import Loader from "../../component/ui/loader/Loader";
 
 const ActivateCollegeModal = ({
   college,
   onClose,
   onActivate,
   onReject,
+  loading: externalLoading = false,
 }) => {
   const [tab, setTab] = useState("activate");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -24,7 +26,7 @@ const ActivateCollegeModal = ({
     setLoading(true);
 
     try {
-      await onActivate({
+      await onActivate?.({
         id: college._id,
         payload: {},
       });
@@ -47,7 +49,7 @@ const ActivateCollegeModal = ({
     setError("");
 
     try {
-      await onReject({
+      await onReject?.({
         id: college._id,
         payload: { rejectionReason },
       });
@@ -71,7 +73,7 @@ const ActivateCollegeModal = ({
               Verify details before approval
             </p>
           </div>
-          <button onClick={onClose} style={closeBtn}>×</button>
+          <button onClick={onClose} disabled={loading || externalLoading} style={closeBtn}>×</button>
         </div>
 
         {/* Body */}
@@ -136,12 +138,14 @@ const ActivateCollegeModal = ({
           </button>
 
           {tab === "activate" ? (
-            <button onClick={handleActivate} disabled={loading} style={greenBtn}>
-              {loading ? "Activating..." : "Activate"}
+            <button onClick={handleActivate} disabled={loading || externalLoading} style={greenBtn}>
+              {loading || externalLoading ? <Loader size={16} color="inherit" /> : null}
+              {loading || externalLoading ? "Activating..." : "Activate"}
             </button>
           ) : (
-            <button onClick={handleReject} disabled={loading} style={redBtn}>
-              {loading ? "Rejecting..." : "Reject"}
+            <button onClick={handleReject} disabled={loading || externalLoading} style={redBtn}>
+              {loading || externalLoading ? <Loader size={16} color="inherit" /> : null}
+              {loading || externalLoading ? "Rejecting..." : "Reject"}
             </button>
           )}
         </div>

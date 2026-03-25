@@ -1,4 +1,5 @@
 import React from "react";
+import Loader from "../../component/ui/loader/Loader";
 
 const DeleteCollegeModal = ({
   show,
@@ -111,7 +112,7 @@ const DeleteCollegeModal = ({
           </button>
 
           <button
-            onClick={onConfirm}
+            onClick={async () => { await onConfirm?.(); }}
             disabled={loading}
             style={{
               padding: "8px 16px",
@@ -121,8 +122,13 @@ const DeleteCollegeModal = ({
               color: "#fff",
               fontWeight: 600,
               cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
             }}
           >
+            {loading ? <Loader size={16} color="inherit" /> : null}
             {loading ? "Deleting..." : "Delete"}
           </button>
         </div>

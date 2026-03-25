@@ -28,6 +28,7 @@ const AddEditCollegeModal = ({
   const isEdit     = Boolean(college);
   const formRef    = useRef(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   const isLastStep = activeStep === TOTAL_STEPS - 1;
 
@@ -43,8 +44,14 @@ const AddEditCollegeModal = ({
     setActiveStep(prev => prev - 1);
   };
 
-  const handleSubmit = () => {
-    formRef.current?.submitForm();
+  const handleSubmit = async () => {
+    if (!formRef.current?.submitForm) return;
+    setSubmitting(true);
+    try {
+      await formRef.current.submitForm();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -74,11 +81,11 @@ const AddEditCollegeModal = ({
               <button
                 className="btn btn-primary d-flex align-items-center gap-2"
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || submitting}
                 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 14, borderRadius: 8 }}
               >
-                {isLoading && <Loader size={18} color="inherit" />}
-                {isEdit ? "Update" : "Save"}
+                {(isLoading || submitting) && <Loader size={18} color="inherit" />}
+                {(isLoading || submitting) ? "Saving..." : (isEdit ? "Update" : "Save")}
               </button>
             ) : (
               <button

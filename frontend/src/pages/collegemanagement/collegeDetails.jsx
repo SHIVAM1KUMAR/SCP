@@ -12,6 +12,31 @@ import CollegeRegistrationForm from "../../component/forms/college/CollegeRegist
 import DeleteCollegeModal from "./deletecollegeModal";
 import ActivateCollegeModal from "./activateCollege";
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const FILE_BASE_URL = BASE_URL.replace(/\/api\/?$/, "");
+
+const toFileUrl = (value) => {
+  if (!value) return "";
+  const normalized = String(value).replace(/\\/g, "/");
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  const uploadsMatch = normalized.match(/(?:^|\/)uploads\/(.+)$/i);
+  if (uploadsMatch?.[1]) {
+    const uploadPath = uploadsMatch[1]
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+    return `${FILE_BASE_URL}/uploads/${uploadPath}`;
+  }
+  if (/^[a-zA-Z]:\//.test(normalized)) {
+    return `${FILE_BASE_URL}/uploads/${encodeURIComponent(normalized.split("/").pop())}`;
+  }
+  return `${FILE_BASE_URL}/${normalized.replace(/^\/+/, "")}`;
+};
+
+const getDocumentRef = (docs, key) =>
+  docs?.[key]?.url ||
+  docs?.[key]?.path ||
+  docs?.[key] ||
+  "";
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   navy: "#0f2044",
@@ -116,7 +141,10 @@ function InfoField({ label, value, fullWidth, mono }) {
 }
 
 function FileCard({ label, filename, required }) {
-  if (!filename) {
+  const fileRef = typeof filename === "string" ? filename : filename?.url || filename?.path || filename?.name || "";
+  const fileUrl = toFileUrl(fileRef);
+
+  if (!fileUrl) {
     return (
       <div>
         <div style={{
@@ -139,12 +167,9 @@ function FileCard({ label, filename, required }) {
     );
   }
 
-const fileUrl = filename?.startsWith("http")
-  ? filename
-  : `${BASE_URL}/${filename}`;
-  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
-  const isPdf = /\.pdf$/i.test(filename);
-  const name = filename.split("/").pop();
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileRef);
+  const isPdf = /\.pdf$/i.test(fileRef);
+  const name = fileRef.split("/").pop();
 
   return (
     <div>
@@ -183,6 +208,33 @@ const fileUrl = filename?.startsWith("http")
   );
 }
 
+function LogoAvatar({ docs }) {
+  const logoRef = getDocumentRef(docs, "logo");
+  const logoUrl = toFileUrl(logoRef);
+  const [broken, setBroken] = useState(false);
+
+  return (
+    <div style={{
+      width: 64, height: 64, borderRadius: 14,
+      background: logoUrl && !broken ? "transparent" : C.navyLight,
+      border: `2px solid ${C.border}`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      overflow: "hidden", flexShrink: 0,
+    }}>
+      {logoUrl && !broken ? (
+        <img
+          src={logoUrl}
+          alt="logo"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <span style={{ fontSize: 28 }}>🏛️</span>
+      )}
+    </div>
+  );
+}
+
 function ActionBtn({ label, onClick, variant = "default", icon }) {
   const styles = {
     default: { bg: C.white, color: C.navy, border: `1.5px solid ${C.border}` },
@@ -214,7 +266,17 @@ function ActionBtn({ label, onClick, variant = "default", icon }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function CollegeDetails() {
   const { id } = useParams();
-  const { college: collegeResponse, isCollegeLoading, deleteCollege, activateCollege } = useColleges(id);
+  const {
+    college: collegeResponse,
+    isCollegeLoading,
+    deleteCollegeAsync,
+    activateCollegeAsync,
+    rejectCollegeAsync,
+    fetchCollege,
+    isDeletingCollege,
+    isActivatingCollege,
+    isRejectingCollege,
+  } = useColleges(id);
 
   const college = collegeResponse?.data?.data || collegeResponse?.data || collegeResponse || {};
 
@@ -256,8 +318,9 @@ export default function CollegeDetails() {
     );
   }
 
-  const docs = college.documents || {};
+  const docs = college.documentFiles || college.documents || college.docs || {};
   const addr = college.address || {};
+  const establishedValue = college.established || college.establishedYear || "—";
 
   return (
     <>
@@ -292,26 +355,7 @@ export default function CollegeDetails() {
               {/* Left: identity */}
               <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
                 {/* Logo avatar */}
-                <div style={{
-                  width: 64, height: 64, borderRadius: 14,
-                  background: docs.logo ? "transparent" : C.navyLight,
-                  border: `2px solid ${C.border}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  overflow: "hidden", flexShrink: 0,
-                }}>
-                  {docs.logo
-                    ? <img
-src={
-    docs.logo?.startsWith("http")
-      ? docs.logo
-      : `${BASE_URL}/${docs.logo}`
-  }
-                      alt="logo"
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                    : <span style={{ fontSize: 28 }}>🏛️</span>
-                  }
-                </div>
+                <LogoAvatar docs={docs} />
 
                 <div>
                   <h1 style={{
@@ -399,7 +443,7 @@ src={
               <InfoField label="Email" value={college.email} />
               <InfoField label="Phone" value={college.phone} />
               <InfoField label="Website" value={college.website} />
-              <InfoField label="Established" value={college.established} />
+              <InfoField label="Established" value={establishedValue} />
               <InfoField label="Affiliation" value={college.affiliation} />
               <InfoField label="Payment Status" value={college.paymentStatus} />
               <InfoField label="Location" value={college.location} />
@@ -421,10 +465,10 @@ src={
           <div style={{ gridColumn: "1/-1" }}>
             <SectionCard title="Documents & Files" icon="📄">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <FileCard label="College Logo" filename={docs.logo} />
-                <FileCard label="Affiliation Certificate" filename={docs.affiliationCert} required />
-                <FileCard label="Registration Certificate" filename={docs.registrationCert} />
-                <FileCard label="Payment Receipt" filename={docs.paymentReceipt} required />
+                <FileCard label="College Logo" filename={getDocumentRef(docs, "logo")} />
+                <FileCard label="Affiliation Certificate" filename={getDocumentRef(docs, "affiliationCert")} required />
+                <FileCard label="Registration Certificate" filename={getDocumentRef(docs, "registrationCert")} />
+                <FileCard label="Payment Receipt" filename={getDocumentRef(docs, "paymentReceipt")} required />
               </div>
             </SectionCard>
           </div>
@@ -544,7 +588,12 @@ src={
               }}>×</button>
             </div>
             <div style={{ overflowY: "auto", maxHeight: "calc(92vh - 62px)" }}>
-              <CollegeRegistrationForm college={college} onClose={() => setShowEditModal(false)} />
+              <CollegeRegistrationForm
+                college={college}
+                collegeId={college?._id || null}
+                onSaved={async () => { await fetchCollege?.(); }}
+                onClose={() => setShowEditModal(false)}
+              />
             </div>
           </div>
         </div>
@@ -554,8 +603,12 @@ src={
         <DeleteCollegeModal
           show={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
-          onConfirm={() => { deleteCollege(college._id); setShowDeleteModal(false); }}
+          onConfirm={async () => {
+            await deleteCollegeAsync(college._id);
+            setShowDeleteModal(false);
+          }}
           college={college}
+          loading={isDeletingCollege}
         />
       )}
 
@@ -563,8 +616,9 @@ src={
         <ActivateCollegeModal
           college={college}
           onClose={() => setShowActivateModal(false)}
-          onActivate={activateCollege}
-          onReject={() => { }}
+          onActivate={activateCollegeAsync}
+          onReject={rejectCollegeAsync}
+          loading={isActivatingCollege || isRejectingCollege}
         />
       )}
     </>

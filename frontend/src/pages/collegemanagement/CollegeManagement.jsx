@@ -3,34 +3,37 @@ import { useNavigate } from "react-router-dom";
 import { useColleges } from "../../hooks/useCollege";
 import CollegeRegistrationForm from "../../component/forms/college/CollegeRegistrationForm";
 import DeleteCollegeModal from "./deletecollegeModal";   // ← Import the clean modal we made
+import { getAuth } from "../../store/slice/auth.slice";
+import Loader from "../../component/ui/loader/Loader";
 
 export default function CollegeManagement() {
-  const { colleges, isLoadingColleges, deleteCollege } = useColleges();
+  const { colleges, isLoadingColleges, deleteCollegeAsync, fetchColleges, isDeletingCollege } = useColleges();
   
   const [search, setSearch] = useState("");
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [page, setPage] = useState(1);
   const [openAddEditModal, setOpenAddEditModal] = useState(false);
   const [selectedCollege, setSelectedCollege] = useState(null);   // for Edit
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [collegeToDelete, setCollegeToDelete] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const navigate = useNavigate();
+  const { role } = getAuth();
+  const baseCollegeRoute = role === "Admin" ? "/admin/college" : "/superadmin/college";
 
-  // Filter colleges
   const filtered = colleges?.filter((c) => {
     const q = search.toLowerCase();
     return (
       c.collegeName?.toLowerCase().includes(q) ||
-      c.email?.toLowerCase().includes(q)
+      c.email?.toLowerCase().includes(q) ||
+      c.collegeCode?.toLowerCase().includes(q)
     );
   }) || [];
 
-  // Pagination
-  const totalItems = filtered.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentItems = filtered.slice(startIndex, startIndex + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * rowsPerPage;
+  const currentItems = filtered.slice(start, start + rowsPerPage);
 
   // Open Add Modal
   const handleAdd = () => {
@@ -50,12 +53,19 @@ export default function CollegeManagement() {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (collegeToDelete) {
-      deleteCollege(collegeToDelete._id);
+      await deleteCollegeAsync(collegeToDelete._id);
     }
     setShowDeleteModal(false);
     setCollegeToDelete(null);
+  };
+
+  const handleSaved = async (isEdit) => {
+    if (!isEdit) {
+      setPage(1);
+    }
+    await fetchColleges?.();
   };
 
   return (
@@ -94,7 +104,7 @@ export default function CollegeManagement() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setCurrentPage(1);
+                setPage(1);
               }}
               placeholder="Search college..."
               style={{
@@ -144,7 +154,7 @@ export default function CollegeManagement() {
               {isLoadingColleges ? (
                 <tr>
                   <td colSpan={8} style={{ textAlign: "center", padding: 40 }}>
-                    <div className="spinner-border text-primary" />
+                    <Loader size={30} />
                   </td>
                 </tr>
               ) : currentItems.length ? (
@@ -152,11 +162,11 @@ export default function CollegeManagement() {
                   <tr
                     key={c._id}
                     style={{ cursor: "pointer" }}
-                    onClick={() => navigate(`/superadmin/college/${c._id}`)}
+                    onClick={() => navigate(`${baseCollegeRoute}/${c._id}`)}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#fafbfc")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    <td style={td}>{startIndex + i + 1}</td>
+                    <td style={td}>{start + i + 1}</td>
                     <td style={td}>
                       <div style={{ fontWeight: 600, color: "#1e293b" }}>
                         {c.collegeName}
@@ -231,68 +241,50 @@ export default function CollegeManagement() {
         </div>
 
         {/* PAGINATION */}
-        {totalPages > 1 && (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "16px 0" }}>
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => prev - 1)} style={paginationBtn}>
-              Prev
-            </button>
-            {[...Array(totalPages)].map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentPage(idx + 1)}
-                style={{
-                  ...paginationBtn,
-                  border: currentPage === idx + 1 ? "2px solid #1a6fa8" : "1px solid #ccc",
-                  background: currentPage === idx + 1 ? "#e8f4fd" : "#fff",
+        {filtered.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 16, padding: "12px 20px", fontSize: 13, color: "#64748b", borderTop: "1px solid #f0f3f7" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>Rows:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setPage(1);
                 }}
+                style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 13, fontFamily: "'Outfit', sans-serif", color: "#1e293b" }}
               >
-                {idx + 1}
+                {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <span>{start + 1}–{Math.min(start + rowsPerPage, filtered.length)} of {filtered.length}</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                style={{ border: "1px solid #e2e8f0", borderRadius: 6, background: "none", padding: "3px 10px", fontSize: 16, cursor: safePage === 1 ? "not-allowed" : "pointer", color: safePage === 1 ? "#cbd5e1" : "#374151" }}
+              >
+                ‹
               </button>
-            ))}
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => prev + 1)} style={paginationBtn}>
-              Next
-            </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                style={{ border: "1px solid #e2e8f0", borderRadius: 6, background: "none", padding: "3px 10px", fontSize: 16, cursor: safePage >= totalPages ? "not-allowed" : "pointer", color: safePage >= totalPages ? "#cbd5e1" : "#374151" }}
+              >
+                ›
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {/* ADD / EDIT MODAL */}
       {openAddEditModal && (
-        <div
-          onClick={() => setOpenAddEditModal(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              padding: 0,
-              borderRadius: 10,
-              width: "95%",
-              maxWidth: 900,
-              maxHeight: "92vh",
-              overflowY: "auto",
-            }}
-          >
-            <CollegeRegistrationForm
-              college={selectedCollege} 
-               //college={college}
-               collegeId={college._id}          // ← Pre-filled when editing
-              onClose={() => setOpenAddEditModal(false)}
-            />
-          </div>
-        </div>
+        <CollegeRegistrationForm
+          college={selectedCollege}
+          collegeId={selectedCollege?._id || null}
+          onSaved={handleSaved}
+          onClose={() => setOpenAddEditModal(false)}
+        />
       )}
 
       {/* DELETE MODAL */}
@@ -302,7 +294,7 @@ export default function CollegeManagement() {
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDeleteConfirm}
           college={collegeToDelete}
-          loading={false}           // You can connect real loading state later
+          loading={isDeletingCollege}
         />
       )}
     </div>

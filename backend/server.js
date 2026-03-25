@@ -32,7 +32,8 @@ const io = new Server(httpServer, {
 });
 
 // ─── Ensure uploads directory exists ───────────────────────────
-const uploadsPath = path.join(__dirname, "uploads");
+// Keep upload storage aligned with the route multer destination.
+const uploadsPath = path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath);

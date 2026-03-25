@@ -8,31 +8,22 @@ import {
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import { useColleges } from "../../../hooks/useCollege";
+import Loader from "../../ui/loader/Loader";
+import "../../../types/collegeRegistration.type.js";
+import {
+  STEPS,
+  COLLEGE_TYPES,
+  INDIA_STATES,
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_DOC_TYPES,
+  MAX_FILE_SIZE_MB,
+  MAX_FILE_SIZE_BYTES,
+} from "../../../constant/collegeRegistration.jsx";
 
-
-// ─── Constants (inline — swap for your import if preferred) ──────────────────
-export const COLLEGE_TYPES = [
-  "Government", "Private", "Deemed University", "Autonomous",
-  "Affiliated", "Central University", "State University", "Other",
-];
-
-export const INDIA_STATES = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
-  "Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
-  "Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram",
-  "Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
-  "Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
-  "Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu",
-  "Delhi","Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry",
-];
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-const STEPS             = ["Basic Info", "Address", "Documents", "Courses", "Payment"];
-const ACCEPTED_IMAGE    = ".jpg,.jpeg,.png";
-const ACCEPTED_DOC      = ".jpg,.jpeg,.png,.pdf";
-const MAX_MB            = 5;
-const MAX_BYTES         = MAX_MB * 1024 * 1024;
-
+const ACCEPTED_IMAGE = ACCEPTED_IMAGE_TYPES;
+const ACCEPTED_DOC = ACCEPTED_DOC_TYPES;
+const MAX_MB = MAX_FILE_SIZE_MB;
+const MAX_BYTES = MAX_FILE_SIZE_BYTES;
 // ─── Default values ───────────────────────────────────────────────────────────
 export const EMPTY_COURSE = {
   courseName: "", courseCode: "", duration: "",
@@ -50,6 +41,39 @@ export const INITIAL_FILE_VALUES = {
   logo: null, affiliationCert: null,
   registrationCert: null, paymentReceipt: null,
 };
+
+const isExistingFileRef = (value) => typeof value === "string" && value.trim() !== "";
+
+const getDisplayFileName = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") {
+    return decodeURIComponent(value.split("/").pop()?.split("?")[0] || "Uploaded file");
+  }
+  return value.name || value.fileName || value.path?.split("/").pop() || value.url?.split("/").pop() || "Uploaded file";
+};
+
+const buildFormValues = (college) => {
+  if (!college) return INITIAL_FORM_VALUES;
+
+  return {
+    ...INITIAL_FORM_VALUES,
+    ...college,
+    establishedYear: college.establishedYear || college.established || "",
+    address: {
+      ...INITIAL_FORM_VALUES.address,
+      ...(college.address || {}),
+    },
+    courses: Array.isArray(college.courses) ? college.courses : [],
+  };
+};
+
+const resolveExistingFileValue = (college, key) =>
+  college?.documentFiles?.[key]?.url ||
+  college?.documentFiles?.[key]?.path ||
+  college?.documents?.[key] ||
+  college?.docs?.[key] ||
+  college?.[key] ||
+  null;
 
 // ─── Yup helpers ──────────────────────────────────────────────────────────────
 const optionalFile = (label) =>
@@ -88,7 +112,7 @@ const addressSchema = Yup.object({
 });
 
 const documentsSchema = Yup.object({
-  affiliationCert:  requiredFile("Affiliation certificate"),
+  affiliationCert:  optionalFile("Affiliation certificate"),
   logo:             optionalFile("College logo"),
   registrationCert: optionalFile("Registration certificate"),
 });
@@ -105,7 +129,7 @@ export const courseItemSchema = Yup.object({
 });
 
 const coursesSchema  = Yup.object({ courses: Yup.array().of(courseItemSchema).optional() });
-const paymentSchema  = Yup.object({ paymentReceipt: requiredFile("Payment receipt") });
+const paymentSchema  = Yup.object({ paymentReceipt: optionalFile("Payment receipt") });
 
 const STEP_SCHEMAS = [basicInfoSchema, addressSchema, documentsSchema, coursesSchema, paymentSchema];
 
@@ -209,25 +233,26 @@ function RHFSelect({ name, label, required, hint, placeholder, options, span }) 
 // ─── File field ───────────────────────────────────────────────────────────────
 function FileField({ label, name, accept, onChange, value, required, error, hint }) {
   const ref = useRef();
+  const hasValue = Boolean(value);
   return (
     <Field label={label} required={required} error={error} hint={hint}>
       <div
         onClick={()=>ref.current.click()}
-        style={{ border:`1.5px dashed ${error?C.red:value?"#86efac":C.border}`,
+        style={{ border:`1.5px dashed ${error?C.red:hasValue?"#86efac":C.border}`,
           borderRadius:10, padding:"13px 15px", cursor:"pointer",
-          background:error?C.redBg:value?C.greenBg:C.cream,
+          background:error?C.redBg:hasValue?C.greenBg:C.cream,
           display:"flex", alignItems:"center", gap:12, transition:"all .15s" }}
         onMouseEnter={e=>(e.currentTarget.style.borderColor=C.gold)}
-        onMouseLeave={e=>(e.currentTarget.style.borderColor=error?C.red:value?"#86efac":C.border)}>
+        onMouseLeave={e=>(e.currentTarget.style.borderColor=error?C.red:hasValue?"#86efac":C.border)}>
         <div style={{ width:36, height:36, borderRadius:8, flexShrink:0,
-          background:value?"#dcfce7":error?C.redBdr:C.navyLt,
+          background:hasValue?"#dcfce7":error?C.redBdr:C.navyLt,
           display:"flex", alignItems:"center", justifyContent:"center", fontSize:17 }}>
-          {value?"✅":error?"⚠️":"📎"}
+          {hasValue?"✅":error?"⚠️":"📎"}
         </div>
         <div>
           <div style={{ fontSize:13, fontWeight:600, fontFamily:font.body,
-            color:value?C.green:error?C.red:C.navy }}>
-            {value?value.name:"Click to upload"}
+            color:hasValue?C.green:error?C.red:C.navy }}>
+            {hasValue ? getDisplayFileName(value) : "Click to upload"}
           </div>
           <div style={{ fontSize:11.5, color:C.slateXl, marginTop:1, fontFamily:font.body }}>
             {accept.replace(/\./g,"").toUpperCase().split(",").join(", ")} · max {MAX_MB} MB
@@ -304,6 +329,22 @@ function StepDocuments({ files, onFileChange, fileErrors }) {
   );
 }
 
+function CourseDraftField({ label, placeholder, type = "text", required, value, error, onChange }) {
+  return (
+    <Field label={label} required={required} error={error}>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        style={mkInp(!!error)}
+        onFocus={e => iFocus(e, !!error)}
+        onBlur={e => iBlur(e, !!error)}
+      />
+    </Field>
+  );
+}
+
 // ─── Step 3 — Courses ─────────────────────────────────────────────────────────
 function StepCourses() {
   const { control, formState:{ errors } } = useFormContext();
@@ -325,15 +366,6 @@ function StepCourses() {
       setDraftErr(e);
     }
   };
-
-  const DI = ({ field, label, placeholder, type="text", required }) => (
-    <Field label={label} required={required} error={draftErr[field]}>
-      <input type={type} placeholder={placeholder} value={draft[field]}
-        onChange={e=>{ setD(field,e.target.value); setDraftErr(prev=>({...prev,[field]:undefined})); }}
-        style={mkInp(!!draftErr[field])}
-        onFocus={e=>iFocus(e,!!draftErr[field])} onBlur={e=>iBlur(e,!!draftErr[field])} />
-    </Field>
-  );
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -390,12 +422,53 @@ function StepCourses() {
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:13 }}>
             <div style={{ gridColumn:"1/-1" }}>
-              <DI field="courseName" label="Course Name" required placeholder="e.g. B.Tech Computer Science" />
+              <CourseDraftField
+                field="courseName"
+                label="Course Name"
+                required
+                placeholder="e.g. B.Tech Computer Science"
+                value={draft.courseName}
+                error={draftErr.courseName}
+                onChange={e => { setD("courseName", e.target.value); setDraftErr(prev => ({ ...prev, courseName: undefined })); }}
+              />
             </div>
-            <DI field="courseCode" label="Course Code" required placeholder="e.g. BTCSE" />
-            <DI field="duration"   label="Duration"    placeholder="e.g. 4 Years" />
-            <DI field="totalSeats" label="Total Seats" required type="number" placeholder="e.g. 120" />
-            <DI field="fees"       label="Annual Fees (₹)" required type="number" placeholder="e.g. 150000" />
+            <CourseDraftField
+              field="courseCode"
+              label="Course Code"
+              required
+              placeholder="e.g. BTCSE"
+              value={draft.courseCode}
+              error={draftErr.courseCode}
+              onChange={e => { setD("courseCode", e.target.value); setDraftErr(prev => ({ ...prev, courseCode: undefined })); }}
+            />
+            <CourseDraftField
+              field="duration"
+              label="Duration"
+              placeholder="e.g. 4 Years"
+              value={draft.duration}
+              error={draftErr.duration}
+              onChange={e => { setD("duration", e.target.value); setDraftErr(prev => ({ ...prev, duration: undefined })); }}
+            />
+            <CourseDraftField
+              field="totalSeats"
+              label="Total Seats"
+              required
+              type="number"
+              placeholder="e.g. 120"
+              value={draft.totalSeats}
+              error={draftErr.totalSeats}
+              onChange={e => { setD("totalSeats", e.target.value); setDraftErr(prev => ({ ...prev, totalSeats: undefined })); }}
+            />
+            <CourseDraftField
+              field="fees"
+              label="Annual Fees (₹)"
+              required
+              type="number"
+              placeholder="e.g. 150000"
+              value={draft.fees}
+              error={draftErr.fees}
+              onChange={e => { setD("fees", e.target.value); setDraftErr(prev => ({ ...prev, fees: undefined })); }}
+            />
             <div style={{ gridColumn:"1/-1" }}>
               <Field label="Description" error={draftErr.description}>
                 <textarea
@@ -528,7 +601,7 @@ function Backdrop({ children, onClose, zIndex=10001 }) {
  *  readOnly       — boolean              disable all inputs (optional)
  */
 const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
-  { onClose, college: defaultValues = null, collegeId = null, readOnly = false },
+  { onClose, onSaved, college: defaultValues = null, collegeId = null, readOnly = false },
   ref,
 ) {
   const { updateCollege, registerCollege } = useColleges();
@@ -542,14 +615,12 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
 
   // Single resolver covering ALL steps — values never lost on step change
   const methods = useForm({
-    defaultValues: isEdit ? defaultValues : INITIAL_FORM_VALUES,
-   resolver: yupResolver(
-  Yup.object()
+    defaultValues: isEdit ? buildFormValues(defaultValues) : INITIAL_FORM_VALUES,
+    resolver: yupResolver(
+      Yup.object()
     .concat(basicInfoSchema)
     .concat(addressSchema)
-    .concat(documentsSchema)   // ✅ add this
     .concat(coursesSchema)
-    .concat(paymentSchema) 
 ),
     mode:          "onChange",     // ← live validation on every change
     reValidateMode:"onChange",
@@ -559,20 +630,26 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
 
   // ── FIX: Reset form when edit data changes (edit button opens form with prev data) ──
   useEffect(() => {
-  if (isEdit && defaultValues) {
-    reset(defaultValues);
+    if (isEdit && defaultValues) {
+      reset(buildFormValues(defaultValues));
+      setStep(0);
+      setFiles({
+        logo: resolveExistingFileValue(defaultValues, "logo"),
+        affiliationCert: resolveExistingFileValue(defaultValues, "affiliationCert"),
+        registrationCert: resolveExistingFileValue(defaultValues, "registrationCert"),
+        paymentReceipt: resolveExistingFileValue(defaultValues, "paymentReceipt"),
+      });
+      setFileErrors({});
+      setSuccess(false);
+      return;
+    }
+
+    reset(INITIAL_FORM_VALUES);
+    setFiles(INITIAL_FILE_VALUES);
     setStep(0);
-    // Preserve existing files in edit mode if available
-    setFiles({
-      logo: defaultValues?.logo || null,
-      affiliationCert: defaultValues?.affiliationCert || null,
-      registrationCert: defaultValues?.registrationCert || null,
-      paymentReceipt: defaultValues?.paymentReceipt || null,
-    });
     setFileErrors({});
     setSuccess(false);
-  }
-}, [defaultValues, isEdit, reset]);
+  }, [defaultValues, isEdit, reset]);
 
   // Expose helpers to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -591,6 +668,49 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
     const data = s===2
       ? { logo:files.logo, affiliationCert:files.affiliationCert, registrationCert:files.registrationCert }
       : { paymentReceipt:files.paymentReceipt };
+
+    if (!isEdit) {
+      if (s === 2 && !files.affiliationCert) {
+        setFileErrors({ affiliationCert: "Affiliation certificate is required" });
+        return false;
+      }
+      if (s === 4 && !files.paymentReceipt) {
+        setFileErrors({ paymentReceipt: "Payment receipt is required" });
+        return false;
+      }
+    } else {
+      if (s === 2 && !files.affiliationCert && !resolveExistingFileValue(defaultValues, "affiliationCert")) {
+        setFileErrors({ affiliationCert: "Affiliation certificate is required" });
+        return false;
+      }
+      if (s === 4 && !files.paymentReceipt && !resolveExistingFileValue(defaultValues, "paymentReceipt")) {
+        setFileErrors({ paymentReceipt: "Payment receipt is required" });
+        return false;
+      }
+    }
+
+    if (isEdit) {
+      const uploadedFilesOnly = Object.fromEntries(
+        Object.entries(data).filter(([, value]) => value && !isExistingFileRef(value)),
+      );
+
+      if (Object.keys(uploadedFilesOnly).length === 0) {
+        setFileErrors({});
+        return true;
+      }
+
+      try {
+        await STEP_SCHEMAS[s].validate(uploadedFilesOnly, { abortEarly:false });
+        setFileErrors({});
+        return true;
+      } catch (err) {
+        const e={};
+        err.inner.forEach(i=>(e[i.path]=i.message));
+        setFileErrors(e);
+        return false;
+      }
+    }
+
     try {
       await STEP_SCHEMAS[s].validate(data, { abortEarly:false });
       setFileErrors({});
@@ -617,6 +737,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
       ok = await validateRHF();
     }
     if (ok) { clearErrors(); setStep(s=>s+1); }
+    return ok;
   };
 
   const handleBack = () => {
@@ -650,16 +771,22 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
     fd.append("courses", JSON.stringify(data.courses || []));
 
     Object.entries(files).forEach(([k, v]) => {
-      if (v) fd.append(k, v);
+      if (v && !isExistingFileRef(v)) fd.append(k, v);
     });
 
     if (isEdit) {
-      updateCollege({
+      await updateCollege({
         id: collegeId,
         payload: fd,
       });
     } else {
-      registerCollege(fd);
+      await registerCollege(fd);
+    }
+
+    try {
+      await onSaved?.(isEdit);
+    } catch {
+      // Keep the submit flow moving even if the refresh callback fails.
     }
 
     setSuccess(true);
@@ -785,7 +912,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
 
           {/* FormProvider wraps everything — NO key={step} so values persist */}
           <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(doSubmit)} noValidate>
+            <form onSubmit={(e) => e.preventDefault()} noValidate>
 
               {step===0 && <StepBasic />}
               {step===1 && <StepAddress />}
@@ -831,20 +958,16 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
                     Continue →
                   </button>
                 ) : (
-                  <button type="submit" disabled={loading} className="cd-nav"
+                  <button type="button" onClick={handleSubmit(doSubmit)} disabled={loading} className="cd-nav"
                     style={{ height:42, padding:"0 24px", border:"none",
                       borderRadius:9, fontFamily:font.body,
                       background:loading?C.slateXl:`linear-gradient(135deg,${C.navy},${C.navyMid})`,
                       color:C.white, fontSize:13.5, fontWeight:700,
                       cursor:loading?"not-allowed":"pointer",
                       boxShadow:loading?"none":"0 4px 14px rgba(15,32,68,.28)",
-                      display:"flex", alignItems:"center", gap:7 }}>
-                    {loading
-                      ? <><span style={{ width:13, height:13,
-                          border:"2px solid rgba(255,255,255,.35)",
-                          borderTopColor:"#fff", borderRadius:"50%", display:"inline-block",
-                          animation:"spin .7s linear infinite" }} />Submitting…</>
-                      : isEdit ? "Save Changes ✓" : "Submit Application ✓"}
+                      display:"inline-flex", alignItems:"center", gap:8 }}>
+                    {loading ? <Loader size={16} color="inherit" /> : null}
+                    {loading ? "Submitting..." : isEdit ? "Save Changes" : "Submit Application"}
                   </button>
                 )}
               </div>

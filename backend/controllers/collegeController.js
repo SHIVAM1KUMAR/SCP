@@ -1,10 +1,70 @@
 import College from "../models/college.js";
 import Student from "../models/student.js";
 import bcrypt from "bcryptjs";
+import path from "path";
 import { sendCollegeCredentialsEmail } from "../utils/mailer.js";
 
 // 🔥 BASE URL (IMPORTANT)
 const BASE_URL = "http://localhost:5000";
+
+const toPublicFileUrl = (value) => {
+  if (!value) return value;
+  const normalized = String(value).replace(/\\/g, "/");
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    return normalized;
+  }
+
+  const uploadsMatch = normalized.match(/(?:^|\/)uploads\/(.+)$/i);
+  if (uploadsMatch?.[1]) {
+    const uploadPath = uploadsMatch[1]
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+    return `${BASE_URL}/uploads/${uploadPath}`;
+  }
+
+  if (/^[a-zA-Z]:\//.test(normalized) || path.isAbsolute(normalized)) {
+    return `${BASE_URL}/uploads/${encodeURIComponent(path.basename(normalized))}`;
+  }
+
+  return `${BASE_URL}/${normalized.replace(/^\/+/, "")}`;
+};
+
+const toStoredUploadPath = (file) => {
+  if (!file?.filename) return null;
+  return `uploads/${file.filename}`;
+};
+
+const normalizeDocumentValue = (value) => {
+  if (!value) return null;
+
+  const raw = String(value).replace(/\\/g, "/");
+  const fileName = raw.split("/").pop() || "";
+
+  return {
+    path: raw,
+    url: toPublicFileUrl(raw),
+    name: fileName,
+  };
+};
+
+const attachDocumentViews = (obj) => {
+  const documents = obj?.documents || {};
+  const documentFiles = {};
+
+  Object.keys(documents).forEach((key) => {
+    documentFiles[key] = normalizeDocumentValue(documents[key]);
+    if (documentFiles[key]?.url) {
+      documents[key] = documentFiles[key].url;
+    }
+  });
+
+  return {
+    ...obj,
+    documents,
+    documentFiles,
+  };
+};
 
 export const getColleges = async (req, res) => {
   try {
@@ -33,12 +93,12 @@ export const getColleges = async (req, res) => {
       if (obj.documents) {
         Object.keys(obj.documents).forEach((key) => {
           if (obj.documents[key]) {
-            obj.documents[key] = `${BASE_URL}/${obj.documents[key]}`;
+            obj.documents[key] = toPublicFileUrl(obj.documents[key]);
           }
         });
       }
 
-      return obj;
+      return attachDocumentViews(obj);
     });
 
     const total = await College.countDocuments(query);
@@ -128,10 +188,10 @@ export const registerCollege = async (req, res) => {
     // ✅ Handle documents
     const documents = {};
     if (req.files) {
-      if (req.files.logo) documents.logo = req.files.logo[0].path;
-      if (req.files.affiliationCert) documents.affiliationCert = req.files.affiliationCert[0].path;
-      if (req.files.registrationCert) documents.registrationCert = req.files.registrationCert[0].path;
-      if (req.files.paymentReceipt) documents.paymentReceipt = req.files.paymentReceipt[0].path;
+      if (req.files.logo?.[0]) documents.logo = toStoredUploadPath(req.files.logo[0]);
+      if (req.files.affiliationCert?.[0]) documents.affiliationCert = toStoredUploadPath(req.files.affiliationCert[0]);
+      if (req.files.registrationCert?.[0]) documents.registrationCert = toStoredUploadPath(req.files.registrationCert[0]);
+      if (req.files.paymentReceipt?.[0]) documents.paymentReceipt = toStoredUploadPath(req.files.paymentReceipt[0]);
     }
 
     console.log("📁 FILES:", documents);
@@ -170,7 +230,7 @@ export const registerCollege = async (req, res) => {
     res.json({
       success: true,
       message: "College registered successfully",
-      data: college,
+      data: attachDocumentViews(college.toObject()),
     });
 
   } catch (error) {
@@ -299,11 +359,11 @@ export const getPayments = async (req, res) => {
       if (obj.documents) {
         Object.keys(obj.documents).forEach((key) => {
           if (obj.documents[key]) {
-            obj.documents[key] = `${BASE_URL}/${obj.documents[key]}`;
+            obj.documents[key] = toPublicFileUrl(obj.documents[key]);
           }
         });
       }
-      return obj;
+      return attachDocumentViews(obj);
     });
 
     res.json({ success: true, data: formatted });
@@ -349,34 +409,65 @@ export const verifyPayment = async (req, res) => {
 export const updateCollege = async (req, res) => {
   try {
     const { id } = req.params;
-
-    let parsedCourses = req.body.courses;
-
-    if (typeof parsedCourses === "string") {
-      try {
-        parsedCourses = JSON.parse(parsedCourses);
-      } catch (e) {}
-    }
-
-    const updateData = {
-      ...req.body,
-      established: req.body.established || req.body.establishedYear // 🔥 FIX
-    };
-
-    if (parsedCourses) {
-      updateData.courses = parsedCourses;
-    }
-
-    const college = await College.findByIdAndUpdate(id, updateData, { new: true });
+    const college = await College.findById(id);
 
     if (!college) {
       return res.status(404).json({ success: false, message: "College not found" });
     }
 
+    let address = college.address || {};
+    if (req.body.address) {
+      try {
+        address = JSON.parse(req.body.address);
+      } catch (e) {}
+    }
+
+    let parsedCourses = college.courses || [];
+    if (typeof req.body.courses === "string") {
+      try {
+        parsedCourses = JSON.parse(req.body.courses);
+      } catch (e) {}
+    } else if (Array.isArray(req.body.courses)) {
+      parsedCourses = req.body.courses;
+    }
+
+    const documents = {
+      ...(college.documents || {}),
+    };
+
+    if (req.files?.logo?.[0]) documents.logo = toStoredUploadPath(req.files.logo[0]);
+    if (req.files?.affiliationCert?.[0]) documents.affiliationCert = toStoredUploadPath(req.files.affiliationCert[0]);
+    if (req.files?.registrationCert?.[0]) documents.registrationCert = toStoredUploadPath(req.files.registrationCert[0]);
+    if (req.files?.paymentReceipt?.[0]) documents.paymentReceipt = toStoredUploadPath(req.files.paymentReceipt[0]);
+
+    const locationParts = [
+      address?.city,
+      address?.state,
+      address?.country,
+    ].filter(Boolean);
+
+    college.collegeName = req.body.collegeName ?? college.collegeName;
+    college.collegeCode = req.body.collegeCode ?? college.collegeCode;
+    college.email = req.body.email ?? college.email;
+    college.phone = req.body.phone ?? college.phone;
+    college.website = req.body.website ?? college.website;
+    college.established = req.body.establishedYear ?? req.body.established ?? college.established;
+    college.affiliation = req.body.affiliation ?? college.affiliation;
+    college.collegeType = req.body.collegeType ?? college.collegeType;
+    college.address = address;
+    college.location = locationParts.length ? locationParts.join(", ") : college.location;
+    college.courses = parsedCourses;
+    college.documents = documents;
+    if (req.files?.paymentReceipt?.[0]) {
+      college.paymentStatus = "Uploaded";
+    }
+
+    await college.save();
+
     res.json({
       success: true,
       message: "College updated successfully",
-      data: college
+      data: attachDocumentViews(college.toObject())
     });
 
   } catch (error) {
@@ -400,17 +491,9 @@ export const getSingleCollege = async (req, res) => {
     // ✅ FIX: return full URLs
     const obj = college.toObject();
 
-    if (obj.documents) {
-      Object.keys(obj.documents).forEach((key) => {
-        if (obj.documents[key]) {
-          obj.documents[key] = `${BASE_URL}/${obj.documents[key]}`;
-        }
-      });
-    }
-
     res.status(200).json({
       success: true,
-      data: obj,
+      data: attachDocumentViews(obj),
     });
 
   } catch (error) {
