@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getStudents, addStudent, updateStudent, deleteStudent, activateStudent } from "../../api/studentApi";
+import { getStudents, addStudent, updateStudent, deleteStudent, activateStudent } from "../api/studentApi";
 
 export function useStudents(toast) {
   const [students, setStudents]         = useState([]);

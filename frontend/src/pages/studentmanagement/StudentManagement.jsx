@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "../../context/ToastContext";
-import { useStudents } from "../../hooks/studentmanagement/useStudents";
+import { useStudents } from "../../hooks/useStudents";
 import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
 import { ConfirmModal } from "../../component/ui/studentmanagement/ConfirmModal";
 import { StudentModal } from "../../component/ui/studentmanagement/StudentModal";

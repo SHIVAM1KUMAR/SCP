@@ -1,110 +1,133 @@
 import { Navigate, Outlet, useRoutes } from "react-router-dom";
-import { ProtectedRoute }    from "../component/common/protected-route/protectedRoute";
-import { AuthRoutes }        from "./AuthRoutes";
+import { ProtectedRoute } from "../component/common/protected-route/protectedRoute";
+import { AuthRoutes } from "./AuthRoutes";
 import { UnAuthorizedRoute } from "./Unauthorized";
-import { NotFoundRoute }     from "./NotFoundRoute";
-import { getAuth }           from "../store/slice/auth.slice";
-import MainLayout            from "../layouts/MainLayout";
-import AccountSettings       from "../pages/accountsetting/accountSetting";
-import CollegeManagement     from "../pages/collegemanagement/CollegeManagement";
+import { NotFoundRoute } from "./NotFoundRoute";
+import { getAuth } from "../store/slice/auth.slice";
+
+import MainLayout from "../layouts/MainLayout";
+import AccountSettings from "../pages/accountsetting/accountSetting";
+
+import CollegeManagement from "../pages/collegemanagement/CollegeManagement";
+import CollegeDetails from "../pages/collegemanagement/collegeDetails";
 import CollegeRegistrationForm from "../component/forms/college/CollegeRegistrationForm";
-import StudentDashboard      from "../pages/studentmanagement/StudentDashboard";
-import StudentManagement     from "../pages/studentmanagement/StudentManagement";
-import Payments              from "../pages/payments/Payments";
 
-// Uncomment as you build each page:
-// import IntakeManagement    from "../pages/intake/IntakeManagement";
-// import Admissions          from "../pages/admissions/Admissions";
+import StudentDashboard from "../pages/studentmanagement/StudentDashboard";
+import StudentManagement from "../pages/studentmanagement/StudentManagement";
 
-// ─── Shared "Coming Soon" ───────────────────────────────────────────────────
+import Payments from "../pages/payments/Payments";
+
+// ─── Coming Soon ─────────────────────────────
 const ComingSoon = () => (
-  <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontFamily: "'Outfit', sans-serif", fontSize: 14 }}>
+  <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
     This page is coming soon.
   </div>
 );
 
-// ─── Role-Based Route Definitions ───────────────────────────────────────────
-// Define routes based on access to isolate logic centrally instead of repeating.
+// ─── Role Routes ─────────────────────────────
 const ROLE_ROUTES = {
   SuperAdmin: [
     { index: true, element: <Navigate to="college" replace /> },
-    { path: "college",    element: <CollegeManagement /> },
-    { path: "intake",     element: <ComingSoon /> },
-    { path: "students",   element: <StudentManagement /> },
+
+    { path: "college", element: <CollegeManagement /> },
+    { path: "college/:id", element: <CollegeDetails /> },
+
+    { path: "students", element: <StudentManagement /> },
+    { path: "payments", element: <Payments /> },
+
+    { path: "intake", element: <ComingSoon /> },
     { path: "admissions", element: <ComingSoon /> },
-    { path: "users",      element: <ComingSoon /> },
-    { path: "roles",      element: <ComingSoon /> },
-    { path: "reports",    element: <ComingSoon /> },
-    { path: "settings",   element: <ComingSoon /> },
-    { path: "payments",   element: <Payments /> },
+    { path: "users", element: <ComingSoon /> },
+    { path: "roles", element: <ComingSoon /> },
+    { path: "reports", element: <ComingSoon /> },
+    { path: "settings", element: <ComingSoon /> },
   ],
+
   Admin: [
     { index: true, element: <Navigate to="college" replace /> },
-    { path: "college",    element: <CollegeManagement /> },
-    { path: "intake",     element: <ComingSoon /> },
-    { path: "students",   element: <StudentManagement /> },
+
+    { path: "college", element: <CollegeManagement /> },
+    { path: "college/:id", element: <CollegeDetails /> },
+
+    { path: "students", element: <StudentManagement /> },
+
+    { path: "intake", element: <ComingSoon /> },
     { path: "admissions", element: <ComingSoon /> },
   ],
-  College: [
-    { index: true, element: <Navigate to="counselor" replace /> },
-    { path: "counselor",  element: <ComingSoon /> },
-  ],
+
   Student: [
     { index: true, element: <Navigate to="colleges" replace /> },
-    { path: "colleges",   element: <StudentDashboard /> },
-    { path: "admissions", element: <ComingSoon /> },
+    { path: "colleges", element: <StudentDashboard /> },
   ],
 };
 
+// ─── Router ─────────────────────────────────
 const AppRouter = () => {
-  const { role } = getAuth();
-  
-  const currentRoleRoutes = ROLE_ROUTES[role] || ROLE_ROUTES.Student;
-
-  const firstRoute =
-    role === "SuperAdmin" ? "/superadmin/college" :
-    role === "Admin"      ? "/admin/college" :
-    role === "College"    ? "/college/counselor" :
-                            "/student/colleges";
+  const auth = getAuth();
+  const role = auth?.role;
 
   const routes = useRoutes([
-    // ── Auth (public) routes ──────────────────────────────────────────────
+    // ✅ Public Routes (Login, Signup etc.)
     ...AuthRoutes,
 
-    // ── Public Registration Route ─────────────────────────────────────────
+    // Optional public page
     {
       path: "/college/register",
-      element: <CollegeRegistrationForm />
+      element: <CollegeRegistrationForm />,
     },
 
-    // ── Protected routes ──────────────────────────────────────────────────
+    // ✅ Protected Routes
     {
       path: "/",
-      element: <ProtectedRoute />,
+      element: role ? <ProtectedRoute /> : <Navigate to="/login" replace />,
       children: [
         {
           element: <MainLayout />,
           children: [
-            // Root redirect → first allowed page
-            { index: true, element: <Navigate to={firstRoute} replace /> },
-
-            // Dynamically load the correct route tree based on the user's role
+            // Default redirect after login
             {
-              path: (role || "user").toLowerCase(),
-              element: <Outlet />,
-              children: currentRoleRoutes,
+              index: true,
+              element: (
+                <Navigate
+                  to={
+                    role === "SuperAdmin"
+                      ? "/superadmin/college"
+                      : role === "Admin"
+                      ? "/admin/college"
+                      : "/student/colleges"
+                  }
+                  replace
+                />
+              ),
             },
 
-            // ── Shared routes ──────────────────────────────────────────
+            // Role-based routes
+            {
+              path: "superadmin",
+              element: <Outlet />,
+              children: ROLE_ROUTES.SuperAdmin,
+            },
+            {
+              path: "admin",
+              element: <Outlet />,
+              children: ROLE_ROUTES.Admin,
+            },
+            {
+              path: "student",
+              element: <Outlet />,
+              children: ROLE_ROUTES.Student,
+            },
+
+            // Shared routes
             { path: "account-settings", element: <AccountSettings /> },
           ],
         },
       ],
     },
 
-    // ── Error routes ──────────────────────────────────────────────────────
+    // Error routes
     UnAuthorizedRoute,
-    NotFoundRoute,   // catch-all — must be last
+    NotFoundRoute,
   ]);
 
   return routes;

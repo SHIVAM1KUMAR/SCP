@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../hooks/useAuth";
 import { getColleges, toggleInterest } from "../../api/collegeApi";
-import { io } from "socket.io-client";
+//import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || import.meta.env.VITE_API_URL);
+//const socket = io(import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || import.meta.env.VITE_API_URL);
 
 export default function StudentDashboard() {
   const toast = useToast();
@@ -21,17 +21,17 @@ export default function StudentDashboard() {
   const user = userStr ? JSON.parse(userStr) : null;
   const studentEmail = user?.email || "";
 
-  useEffect(() => {
-    fetchData();
+  // useEffect(() => {
+  //   fetchData();
 
-    socket.on("receive_message", (data) => {
-      setMessages((prev) => [...prev, data]);
-    });
+  //   socket.on("receive_message", (data) => {
+  //     setMessages((prev) => [...prev, data]);
+  //   });
 
-    return () => {
-      socket.off("receive_message");
-    };
-  }, []);
+  //   return () => {
+  //     socket.off("receive_message");
+  //   };
+  // }, []);
 
   const fetchData = async () => {
     try {
@@ -68,7 +68,7 @@ export default function StudentDashboard() {
     }]);
 
     const room = `${studentEmail}_${college._id}`;
-    socket.emit("join_room", { room });
+    //socket.emit("join_room", { room });
   };
 
   const sendMessage = () => {
@@ -83,7 +83,7 @@ export default function StudentDashboard() {
       timestamp: new Date() 
     };
     
-    socket.emit("send_message", msgData);
+    // socket.emit("send_message", msgData);
     setMessages(prev => [...prev, msgData]);
     setCurrentMsg("");
   };
@@ -171,4 +171,5 @@ export default function StudentDashboard() {
       )}
     </div>
   );
-}
+
+  }
