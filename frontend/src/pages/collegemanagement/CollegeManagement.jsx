@@ -286,7 +286,9 @@ export default function CollegeManagement() {
             }}
           >
             <CollegeRegistrationForm
-              college={selectedCollege}           // ← Pre-filled when editing
+              college={selectedCollege} 
+               //college={college}
+               collegeId={college._id}          // ← Pre-filled when editing
               onClose={() => setOpenAddEditModal(false)}
             />
           </div>

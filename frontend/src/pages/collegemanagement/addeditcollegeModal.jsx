@@ -90,11 +90,13 @@ const AddEditCollegeModal = ({
 
             {/* Form Component */}
             <CollegeRegistrationForm
-              ref={formRef}
-              defaultValues={college || {}}
-              onSubmit={onSubmit}
-              activeStep={activeStep}
-            />
+  ref={formRef}
+  defaultValues={college}   // 🔥 important
+  onClose={onClose}
+  collegeId={selectedCollege?._id}
+  college={selectedCollege}
+
+/>
           </div>
 
           {/* Footer with Actions */}

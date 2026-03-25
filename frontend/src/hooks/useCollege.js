@@ -15,8 +15,10 @@ export const useColleges = (collegeId = null) => {
     onSuccess: () => {
       toast("College registered successfully", "success");
       queryClient.invalidateQueries({ queryKey: ["colleges"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
-    onError: (err) => toast(err?.response?.data?.message || "Registration failed", "error"),
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Registration failed", "error"),
   });
 
   // ─── Activate College ───────────────────────────
@@ -28,12 +30,14 @@ export const useColleges = (collegeId = null) => {
     onSuccess: () => {
       toast("College activated successfully", "success");
       queryClient.invalidateQueries({ queryKey: ["colleges"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
 
       if (collegeId) {
         queryClient.invalidateQueries({ queryKey: ["college", collegeId] });
       }
     },
-    onError: (err) => toast(err?.response?.data?.message || "Activation failed", "error"),
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Activation failed", "error"),
   });
 
   // ─── Reject College ─────────────────────────────
@@ -45,8 +49,10 @@ export const useColleges = (collegeId = null) => {
     onSuccess: () => {
       toast("College rejected", "warning");
       queryClient.invalidateQueries({ queryKey: ["colleges"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
-    onError: (err) => toast(err?.response?.data?.message || "Rejection failed", "error"),
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Rejection failed", "error"),
   });
 
   // ─── Delete College ─────────────────────────────
@@ -58,8 +64,10 @@ export const useColleges = (collegeId = null) => {
     onSuccess: () => {
       toast("College deleted", "warning");
       queryClient.invalidateQueries({ queryKey: ["colleges"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
-    onError: (err) => toast(err?.response?.data?.message || "Delete failed", "error"),
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Delete failed", "error"),
   });
 
   // ─── Toggle Interest ────────────────────────────
@@ -72,13 +80,30 @@ export const useColleges = (collegeId = null) => {
       toast("Interest updated", "info");
       queryClient.invalidateQueries({ queryKey: ["colleges"] });
     },
-    onError: (err) => toast(err?.response?.data?.message || "Failed to update interest", "error"),
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Failed to update interest", "error"),
   });
 
-  // ─── Update College ─────────────────────────────
+  // ─── Update College (with file upload support) ───
   const updateCollegeMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
-      const res = await axiosInstance.put(`/colleges/${id}`, payload);
+      const formData = new FormData();
+
+      // Append normal fields
+      Object.keys(payload).forEach((key) => {
+        if (key !== "docs") {
+          formData.append(key, payload[key]);
+        }
+      });
+
+      // Append files if present
+      if (payload.docs && payload.docs.length > 0) {
+        payload.docs.forEach((file) => formData.append("docs", file));
+      }
+
+      const res = await axiosInstance.put(`/colleges/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       return res.data;
     },
     onSuccess: () => {
@@ -89,30 +114,22 @@ export const useColleges = (collegeId = null) => {
         queryClient.invalidateQueries({ queryKey: ["college", collegeId] });
       }
     },
-    onError: (err) => toast(err?.response?.data?.message || "Update failed", "error"),
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Update failed", "error"),
   });
 
   // ─── Get Colleges ───────────────────────────────
-  const {
-    data: collegesData,
-    isLoading: isLoadingColleges,
-    isError: isCollegesError,
-    refetch: fetchColleges,
-  } = useQuery({
-    queryKey: ["colleges"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/colleges");
-
-      // 🔥 SAFE HANDLE
-      return res.data?.data || res.data;
-    },
-  });
+  const { data: collegesData, isLoading: isLoadingColleges, isError: isCollegesError, refetch: fetchColleges } =
+    useQuery({
+      queryKey: ["colleges"],
+      queryFn: async () => {
+        const res = await axiosInstance.get("/colleges");
+        return res.data?.data || res.data;
+      },
+    });
 
   // ─── Get Stats ──────────────────────────────────
-  const {
-    data: stats,
-    isLoading: isLoadingStats,
-  } = useQuery({
+  const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["collegeStats"],
     queryFn: async () => {
       const res = await axiosInstance.get("/colleges/stats");
@@ -121,25 +138,41 @@ export const useColleges = (collegeId = null) => {
   });
 
   // ─── Get Single College ─────────────────────────
-  const {
-    data: college,
-    isLoading: isCollegeLoading,
-    isError: isCollegeError,
-  } = useQuery({
+  const { data: college, isLoading: isCollegeLoading, isError: isCollegeError } = useQuery({
     queryKey: ["college", collegeId],
     enabled: !!collegeId,
     queryFn: async () => {
       const res = await axiosInstance.get(`/colleges/${collegeId}`);
-
-      console.log("Single College API:", res.data);
-
-      // 🔥 MAIN FIX (your issue here)
       return res.data?.data || res.data;
     },
   });
 
+  // ─── Get Payments ───────────────────────────────
+  const { data: payments, isLoading: isLoadingPayments, isError: isPaymentsError } = useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/colleges/payments");
+      return res.data?.data || res.data;
+    },
+  });
+
+  // ─── Verify Payment ─────────────────────────────
+  const verifyPaymentMutation = useMutation({
+    mutationFn: async ({ id, payload }) => {
+      const res = await axiosInstance.patch(`/colleges/payments/${id}/verify`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast("Payment verified successfully", "success");
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["colleges"] });
+    },
+    onError: (err) =>
+      toast(err?.response?.data?.message || "Verification failed", "error"),
+  });
+
   return {
-    // mutations
+    // ─── Mutations ─────────────────────────
     registerCollege: registerCollegeMutation.mutate,
     isRegisteringCollege: registerCollegeMutation.isPending,
 
@@ -158,7 +191,10 @@ export const useColleges = (collegeId = null) => {
     updateCollege: updateCollegeMutation.mutate,
     isUpdatingCollege: updateCollegeMutation.isPending,
 
-    // queries
+    verifyPayment: verifyPaymentMutation.mutate,
+    isVerifyingPayment: verifyPaymentMutation.isPending,
+
+    // ─── Queries ───────────────────────────
     colleges: collegesData || [],
     total: collegesData?.length || 0,
     isLoadingColleges,
@@ -171,5 +207,9 @@ export const useColleges = (collegeId = null) => {
     college,
     isCollegeLoading,
     isCollegeError,
+
+    payments: payments || [],
+    isLoadingPayments,
+    isPaymentsError,
   };
 };
