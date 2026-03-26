@@ -8,8 +8,8 @@ import { fileURLToPath } from "url";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
-import studentRoutes from "./routes/studentRoutes.js";
-import collegeRoutes from "./routes/collegeRoutes.js";
+import studentRoutes from "./routes/student/studentRoutes.js";
+import collegeRoutes from "./routes/college/collegeRoutes.js";
 
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -33,7 +33,7 @@ const io = new Server(httpServer, {
 
 // ─── Ensure uploads directory exists ───────────────────────────
 // Keep upload storage aligned with the route multer destination.
-const uploadsPath = path.join(__dirname, "..", "uploads");
+const uploadsPath = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath);

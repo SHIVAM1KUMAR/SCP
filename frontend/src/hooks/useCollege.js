@@ -6,11 +6,13 @@ export const useColleges = (collegeId = null) => {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  const refreshCollegeData = async () => {
+  const refreshCollegeData = async ({ skipSingle = false } = {}) => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["colleges"] }),
       queryClient.invalidateQueries({ queryKey: ["payments"] }),
-      collegeId ? queryClient.invalidateQueries({ queryKey: ["college", collegeId] }) : Promise.resolve(),
+      !skipSingle && collegeId
+        ? queryClient.invalidateQueries({ queryKey: ["college", collegeId] })
+        : Promise.resolve(),
     ]);
   };
 
@@ -20,11 +22,8 @@ export const useColleges = (collegeId = null) => {
       const res = await axiosInstance.post("/colleges/register", payload);
       return res.data;
     },
-    onSuccess: () => {
-      toast("College registered successfully", "success");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Registration failed", "error"),
+    onSuccess: () => toast("College registered successfully", "success"),
+    onError: (err) => toast(err?.response?.data?.message || "Registration failed", "error"),
   });
 
   // ─── Activate College ───────────────────────────
@@ -33,11 +32,8 @@ export const useColleges = (collegeId = null) => {
       const res = await axiosInstance.post(`/colleges/${id}/activate`, payload);
       return res.data;
     },
-    onSuccess: () => {
-      toast("College activated successfully", "success");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Activation failed", "error"),
+    onSuccess: () => toast("College activated successfully", "success"),
+    onError: (err) => toast(err?.response?.data?.message || "Activation failed", "error"),
   });
 
   // ─── Reject College ─────────────────────────────
@@ -46,11 +42,8 @@ export const useColleges = (collegeId = null) => {
       const res = await axiosInstance.post(`/colleges/${id}/reject`, payload);
       return res.data;
     },
-    onSuccess: () => {
-      toast("College rejected", "warning");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Rejection failed", "error"),
+    onSuccess: () => toast("College rejected", "warning"),
+    onError: (err) => toast(err?.response?.data?.message || "Rejection failed", "error"),
   });
 
   // ─── Delete College ─────────────────────────────
@@ -59,11 +52,8 @@ export const useColleges = (collegeId = null) => {
       const res = await axiosInstance.delete(`/colleges/${id}`);
       return res.data;
     },
-    onSuccess: () => {
-      toast("College deleted", "warning");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Delete failed", "error"),
+    onSuccess: () => toast("College deleted", "warning"),
+    onError: (err) => toast(err?.response?.data?.message || "Delete failed", "error"),
   });
 
   // ─── Toggle Interest ────────────────────────────
@@ -72,14 +62,11 @@ export const useColleges = (collegeId = null) => {
       const res = await axiosInstance.post(`/colleges/${id}/interest`);
       return res.data;
     },
-    onSuccess: () => {
-      toast("Interest updated", "info");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Failed to update interest", "error"),
+    onSuccess: () => toast("Interest updated", "info"),
+    onError: (err) => toast(err?.response?.data?.message || "Failed to update interest", "error"),
   });
 
-  // ─── Update College (with file upload support) ───
+  // ─── Update College ──────────────────────────────
   const updateCollegeMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
       const res = await axiosInstance.put(`/colleges/${id}`, payload, {
@@ -87,22 +74,23 @@ export const useColleges = (collegeId = null) => {
       });
       return res.data;
     },
-    onSuccess: () => {
-      toast("College updated successfully", "success");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Update failed", "error"),
+    onSuccess: () => toast("College updated successfully", "success"),
+    onError: (err) => toast(err?.response?.data?.message || "Update failed", "error"),
   });
 
   // ─── Get Colleges ───────────────────────────────
-  const { data: collegesData, isLoading: isLoadingColleges, isError: isCollegesError, refetch: fetchColleges } =
-    useQuery({
-      queryKey: ["colleges"],
-      queryFn: async () => {
-        const res = await axiosInstance.get("/colleges");
-        return res.data?.data || res.data;
-      },
-    });
+  const {
+    data: collegesData,
+    isLoading: isLoadingColleges,
+    isError: isCollegesError,
+    refetch: fetchColleges,
+  } = useQuery({
+    queryKey: ["colleges"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/colleges");
+      return res.data?.data || res.data;
+    },
+  });
 
   // ─── Get Stats ──────────────────────────────────
   const { data: stats, isLoading: isLoadingStats } = useQuery({
@@ -114,17 +102,32 @@ export const useColleges = (collegeId = null) => {
   });
 
   // ─── Get Single College ─────────────────────────
-  const { data: college, isLoading: isCollegeLoading, isError: isCollegeError, refetch: collegeRefetch } = useQuery({
+  const {
+    data: college,
+    isLoading: isCollegeLoading,
+    isError: isCollegeError,
+    refetch: collegeRefetch,
+  } = useQuery({
     queryKey: ["college", collegeId],
     enabled: !!collegeId,
     queryFn: async () => {
       const res = await axiosInstance.get(`/colleges/${collegeId}`);
       return res.data?.data || res.data;
     },
+    // ✅ Never retry on 404 — record was deleted
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 404) return false;
+      return failureCount < 2;
+    },
+    staleTime: 30_000,
   });
 
   // ─── Get Payments ───────────────────────────────
-  const { data: payments, isLoading: isLoadingPayments, isError: isPaymentsError } = useQuery({
+  const {
+    data: payments,
+    isLoading: isLoadingPayments,
+    isError: isPaymentsError,
+  } = useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
       const res = await axiosInstance.get("/colleges/payments");
@@ -138,15 +141,31 @@ export const useColleges = (collegeId = null) => {
       const res = await axiosInstance.patch(`/colleges/payments/${id}/verify`, payload);
       return res.data;
     },
-    onSuccess: () => {
-      toast("Payment verified successfully", "success");
-    },
-    onError: (err) =>
-      toast(err?.response?.data?.message || "Verification failed", "error"),
+    onSuccess: () => toast("Payment verified successfully", "success"),
+    onError: (err) => toast(err?.response?.data?.message || "Verification failed", "error"),
   });
 
+  // ─── Safe delete — NEVER refetches the deleted ID ──────────────────────────
+  const _doDelete = async (id) => {
+    // ✅ Cancel any in-flight GET for this id BEFORE the DELETE fires
+    await queryClient.cancelQueries({ queryKey: ["college", id] });
+
+    const result = await deleteCollegeMutation.mutateAsync(id);
+
+    // ✅ Wipe from cache so no observer can trigger a refetch
+    queryClient.removeQueries({ queryKey: ["college", id] });
+
+    // ✅ Only refresh the list and payments — never touch the deleted single
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["colleges"] }),
+      queryClient.invalidateQueries({ queryKey: ["payments"] }),
+    ]);
+
+    return result;
+  };
+
   return {
-    // ─── Mutations ─────────────────────────
+    // ─── Mutations ──────────────────────────────────
     registerCollege: async (payload) => {
       const result = await registerCollegeMutation.mutateAsync(payload);
       await refreshCollegeData();
@@ -178,16 +197,9 @@ export const useColleges = (collegeId = null) => {
     },
     isRejectingCollege: rejectCollegeMutation.isPending,
 
-    deleteCollege: async (id) => {
-      const result = await deleteCollegeMutation.mutateAsync(id);
-      await refreshCollegeData();
-      return result;
-    },
-    deleteCollegeAsync: async (id) => {
-      const result = await deleteCollegeMutation.mutateAsync(id);
-      await refreshCollegeData();
-      return result;
-    },
+    // ✅ Both table and detail page use the same safe delete
+    deleteCollege: _doDelete,
+    deleteCollegeAsync: _doDelete,
     isDeletingCollege: deleteCollegeMutation.isPending,
 
     toggleInterest: async (id) => {
@@ -221,7 +233,7 @@ export const useColleges = (collegeId = null) => {
     },
     isVerifyingPayment: verifyPaymentMutation.isPending,
 
-    // ─── Queries ───────────────────────────
+    // ─── Queries ────────────────────────────────────
     colleges: collegesData || [],
     total: collegesData?.length || 0,
     isLoadingColleges,

@@ -74,11 +74,20 @@ const menuRef = useRef<HTMLDivElement>(null);
 
 const [menuItemHover, setMenuItemHover] = useState<'account-settings' | 'logout' | null>(null);
 
-  const handleMenuAction = useCallback((action: 'account-settings' | 'logout') => {
-    setOpen(false);
-    if (action === "account-settings") navigate("/superadmin/college");
-    if (action === "logout")           setLogoutOpen(true);
-  }, [navigate]);
+const handleMenuAction = useCallback((action) => {
+  setOpen(false);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const role = user?.role?.toLowerCase();
+
+  if (action === "account-settings") {
+    navigate(`/${role}/account-settings`); // ✅ FIXED
+  }
+
+  if (action === "logout") {
+    setLogoutOpen(true);
+  }
+}, [navigate]);
 
   const handleLogoutConfirm = () => {
     setLogoutOpen(false);

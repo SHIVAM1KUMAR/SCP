@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react"; // ✅ CHANGED (added useState)
 import Loader from "../../component/ui/loader/Loader";
 
 const DeleteCollegeModal = ({
@@ -6,9 +6,36 @@ const DeleteCollegeModal = ({
   onClose,
   onConfirm,
   college,
-  loading = false,
+  loading: externalLoading = false, // ✅ CHANGED (renamed)
 }) => {
+  const [loading, setLoading] = useState(false); // ✅ NEW
+  const [error, setError] = useState(""); // ✅ NEW
+
   if (!show) return null;
+
+  // ✅ NEW: handle delete like activate modal
+  const handleDelete = async () => {
+    if (!college?._id) {
+      setError("College ID missing");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
+    try {
+      await onConfirm?.({ id: college._id });
+      onClose();
+    } catch (e) {
+      setError(
+        e?.response?.data?.message || e.message || "Delete failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isLoading = loading || externalLoading; // ✅ NEW (combine both)
 
   return (
     <div
@@ -51,7 +78,7 @@ const DeleteCollegeModal = ({
           </h5>
           <button
             onClick={onClose}
-            disabled={loading}
+            disabled={isLoading} // ✅ CHANGED
             style={{
               border: "none",
               background: "transparent",
@@ -85,6 +112,13 @@ const DeleteCollegeModal = ({
           <p style={{ fontSize: "13px", color: "#777" }}>
             This action cannot be undone.
           </p>
+
+          {/* ✅ NEW: Error */}
+          {error && (
+            <p style={{ color: "red", marginTop: 10, fontSize: 13 }}>
+              {error}
+            </p>
+          )}
         </div>
 
         {/* Footer */}
@@ -99,7 +133,7 @@ const DeleteCollegeModal = ({
         >
           <button
             onClick={onClose}
-            disabled={loading}
+            disabled={isLoading} // ✅ CHANGED
             style={{
               padding: "8px 14px",
               borderRadius: "6px",
@@ -112,8 +146,8 @@ const DeleteCollegeModal = ({
           </button>
 
           <button
-            onClick={async () => { await onConfirm?.(); }}
-            disabled={loading}
+            onClick={handleDelete} // ✅ CHANGED
+            disabled={isLoading} // ✅ CHANGED
             style={{
               padding: "8px 16px",
               borderRadius: "6px",
@@ -128,8 +162,8 @@ const DeleteCollegeModal = ({
               gap: 8,
             }}
           >
-            {loading ? <Loader size={16} color="inherit" /> : null}
-            {loading ? "Deleting..." : "Delete"}
+            {isLoading ? <Loader size={16} color="inherit" /> : null}
+            {isLoading ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

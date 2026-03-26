@@ -78,4 +78,21 @@
  * @property {string} [_submit]   - Global submission error
  */
 
+export const INITIAL_FORM_VALUES = {
+  collegeName: "", collegeCode: "", email: "", phone: "",
+  website: "", establishedYear: "", collegeType: "", affiliation: "",
+  address: { street: "", city: "", state: "", pincode: "", country: "India" },
+  courses: [],
+};
+
+export const INITIAL_FILE_VALUES = {
+  logo: null, affiliationCert: null,
+  registrationCert: null, paymentReceipt: null,
+};
+
+export const EMPTY_COURSE = {
+  courseName: "", courseCode: "", duration: "",
+  totalSeats: "", fees: "", description: "",
+};
+
 export {}; // keeps this a module so typedefs are importable

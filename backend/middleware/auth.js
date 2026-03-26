@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 
-// ─── Verify JWT ───────────────────────────────────────────────────────────────
 export const protect = (req, res, next) => {
   const header = req.headers.authorization;
 
@@ -25,7 +24,7 @@ export const protect = (req, res, next) => {
   }
 };
 
-// ─── Role Guard ───────────────────────────────────────────────────────────────
+
 export const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user?.role)) {
