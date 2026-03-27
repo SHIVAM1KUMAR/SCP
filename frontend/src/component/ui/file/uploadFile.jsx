@@ -1,137 +1,224 @@
 import { Controller, useFormContext } from "react-hook-form";
+import { MAX_FILE_SIZE_MB } from "../../../constant/collegeRegistration.jsx";
 
-// ─── FileUpload ───────────────────────────────────────────────────────────────
-// AmniCare: MUI Button (component="label") + Chip + Stack + Controller
-// EduAdmit: Bootstrap outlined button + badge chips + react-hook-form Controller
-//
-// Features:
-//   - Single or multiple file upload
-//   - Duplicate file detection (by name+size+lastModified)
-//   - Deletable file chips
-//   - Validation error display
-// ─────────────────────────────────────────────────────────────────────────────
+const getDisplayFileName = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") {
+    return decodeURIComponent(value.split("/").pop()?.split("?")[0] || "Uploaded file");
+  }
+  return value.name || value.fileName || value.path?.split("/").pop() || value.url?.split("/").pop() || "Uploaded file";
+};
 
 const FileUpload = ({
   name,
-  label    = "Upload Files",
+  label = "Upload Files",
   accept,
   multiple = false,
   helperText,
+  hint,
+  error,
+  value,
+  onChange,
+  required = false,
 }) => {
-  const { control } = useFormContext();
-  const inputId = `file-upload-${name}`;
+  const formContext = useFormContext();
+  const control = formContext?.control;
+  const maxMb = MAX_FILE_SIZE_MB;
+  const inputId = `file-upload-${name || label}`;
+  const isControlled = typeof onChange === "function"
+    || value !== undefined
+    || error !== undefined
+    || helperText !== undefined
+    || hint !== undefined
+    || !name;
+
+  const renderUI = ({
+    currentValue,
+    setValue,
+    fieldError,
+    fieldHelperText,
+  }) => {
+    const errorMessage = fieldError || error;
+    const helperMessage = errorMessage || fieldHelperText || helperText || hint;
+    const hasValue = multiple
+      ? Array.isArray(currentValue) && currentValue.length > 0
+      : !!currentValue;
+    const selectedFiles = multiple
+      ? Array.isArray(currentValue) ? currentValue : []
+      : currentValue
+        ? [currentValue]
+        : [];
+
+    const handleChange = (e) => {
+      const selected = Array.from(e.target.files || []);
+      if (multiple) {
+        const next = [...selectedFiles, ...selected].filter((file, index, arr) => {
+          const key = `${file.name}-${file.size}-${file.lastModified}`;
+          return arr.findIndex((candidate) => `${candidate.name}-${candidate.size}-${candidate.lastModified}` === key) === index;
+        });
+        setValue(next);
+      } else {
+        setValue(selected[0] || null);
+      }
+      e.target.value = "";
+    };
+
+    const handleRemove = (index) => {
+      if (multiple) {
+        setValue(selectedFiles.filter((_, i) => i !== index));
+      } else {
+        setValue(null);
+      }
+    };
+
+    return (
+      <div>
+        <label
+          htmlFor={inputId}
+          style={{
+            display: "block",
+            fontSize: 12,
+            fontWeight: 500,
+            color: "#475569",
+            marginBottom: 6,
+            textTransform: "uppercase",
+            letterSpacing: "0.3px",
+            fontFamily: "'Outfit', sans-serif",
+          }}
+        >
+          {label}{required && <span className="text-danger ms-1">*</span>}
+        </label>
+
+        <div
+          onClick={() => document.getElementById(inputId)?.click()}
+          style={{
+            border: `1.5px dashed ${errorMessage ? "#dc2626" : hasValue ? "#86efac" : "#e2e8f0"}`,
+            borderRadius: 10,
+            padding: "13px 15px",
+            cursor: "pointer",
+            background: errorMessage ? "#fef2f2" : hasValue ? "#f0fdf4" : "#faf8f4",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            transition: "all .15s",
+          }}
+        >
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 8,
+            flexShrink: 0,
+            background: hasValue ? "#dcfce7" : errorMessage ? "#fecaca" : "#e8eef8",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 17,
+          }}>
+            {hasValue ? "✅" : errorMessage ? "⚠️" : "📎"}
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              color: hasValue ? "#16a34a" : errorMessage ? "#dc2626" : "#0f2044",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {hasValue ? getDisplayFileName(selectedFiles[0]) : "Click to upload"}
+            </div>
+            <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 1, fontFamily: "'Outfit', sans-serif" }}>
+              {String(accept || "").replace(/\./g, "").toUpperCase().split(",").join(", ")} {accept ? "· " : ""}max {maxMb} MB
+            </div>
+          </div>
+        </div>
+
+        <input
+          id={inputId}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          style={{ display: "none" }}
+          onChange={handleChange}
+        />
+
+        {helperMessage && (
+          <div style={{
+            marginTop: 4,
+            fontSize: 12,
+            color: errorMessage ? "#dc2626" : "#94a3b8",
+          }}>
+            {helperMessage}
+          </div>
+        )}
+
+        {selectedFiles.length > 0 && multiple && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            {selectedFiles.map((file, index) => (
+              <span
+                key={`${getDisplayFileName(file)}-${index}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  borderRadius: 20,
+                  padding: "5px 10px",
+                  fontSize: 12,
+                  color: "#475569",
+                  fontFamily: "'Outfit', sans-serif",
+                }}
+              >
+                {getDisplayFileName(file)}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemove(index);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    color: "#94a3b8",
+                    fontSize: 14,
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (isControlled || !name || !control) {
+    return renderUI({
+      currentValue: value,
+      setValue: (next) => onChange?.(next),
+      fieldError: error,
+      fieldHelperText: helperText || hint,
+    });
+  }
 
   return (
     <Controller
       name={name}
       control={control}
       defaultValue={multiple ? [] : undefined}
-      render={({ field, fieldState }) => {
-        const value = field.value;
-        const files = multiple
-          ? Array.isArray(value) ? value : []
-          : value instanceof File ? [value] : [];
-
-        const handleChange = (e) => {
-          const selected = Array.from(e.target.files || []);
-          if (!multiple) {
-            field.onChange(selected[0] || undefined);
-            return;
-          }
-          // Deduplicate by name + size + lastModified
-          const existingKeys = new Set(
-            files.map(f => `${f.name}-${f.size}-${f.lastModified}`)
-          );
-          const unique = selected.filter(
-            f => !existingKeys.has(`${f.name}-${f.size}-${f.lastModified}`)
-          );
-          field.onChange([...files, ...unique]);
-          e.target.value = ""; // allow re-selecting same file
-        };
-
-        const handleDelete = (index) => {
-          if (!multiple) { field.onChange(undefined); return; }
-          field.onChange(files.filter((_, i) => i !== index));
-        };
-
-        return (
-          <div>
-            {/* Upload button — label wraps hidden input (same as MUI component="label") */}
-            <label
-              htmlFor={inputId}
-              className="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-              style={{
-                cursor: "pointer",
-                fontFamily: "'Outfit', sans-serif",
-                fontSize: 14,
-                borderRadius: 8,
-              }}
-            >
-              {/* Upload icon */}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1={12} y1={3} x2={12} y2={15} />
-              </svg>
-              {label}
-              <input
-                id={inputId}
-                type="file"
-                accept={accept}
-                multiple={multiple}
-                onChange={handleChange}
-                style={{ display: "none" }}
-              />
-            </label>
-
-            {/* Helper text */}
-            {helperText && (
-              <small className="d-block text-muted mt-1">{helperText}</small>
-            )}
-
-            {/* Validation error */}
-            {fieldState.error && (
-              <small className="d-block text-danger mt-1">
-                {fieldState.error.message}
-              </small>
-            )}
-
-            {/* Selected file chips */}
-            {files.length > 0 && (
-              <div className="d-flex flex-wrap gap-2 mt-2">
-                {files.map((file, index) => (
-                  <span
-                    key={`${file.name}-${index}`}
-                    className="badge d-inline-flex align-items-center gap-1 border text-secondary fw-normal"
-                    style={{
-                      background: "#f8fafc",
-                      fontSize: 12,
-                      padding: "5px 10px",
-                      borderRadius: 20,
-                      fontFamily: "'Outfit', sans-serif",
-                    }}
-                  >
-                    {file.name}
-                    {/* Delete × */}
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(index)}
-                      style={{
-                        background: "none", border: "none",
-                        padding: "0 0 0 4px", cursor: "pointer",
-                        color: "#94a3b8", fontSize: 14, lineHeight: 1,
-                        display: "flex", alignItems: "center",
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      }}
+      render={({ field, fieldState }) => renderUI({
+        currentValue: field.value,
+        setValue: field.onChange,
+        fieldError: fieldState.error?.message,
+        fieldHelperText: helperText || hint,
+      })}
     />
   );
 };

@@ -203,30 +203,30 @@ export default function AccountSettings() {
           />
         ),
       },
-      {
-        id: 1,
-        title: "Documents",
-        icon: Icons.Documents,
-        content: <div>Documents</div>,
-      },
-      {
-        id: 2,
-        title: "Licenses",
-        icon: Icons.Licenses,
-        content: <div>Licenses</div>,
-      },
-      {
-        id: 3,
-        title: "Background Checks",
-        icon: Icons.Background,
-        content: <div>Background</div>,
-      },
-      {
-        id: 4,
-        title: "Availability",
-        icon: Icons.Schedule,
-        content: <div>Availability</div>,
-      },
+      // {
+      //   id: 1,
+      //   title: "Documents",
+      //   icon: Icons.Documents,
+      //   content: <div>Documents</div>,
+      // },
+      // {
+      //   id: 2,
+      //   title: "Licenses",
+      //   icon: Icons.Licenses,
+      //   content: <div>Licenses</div>,
+      // },
+      // {
+      //   id: 3,
+      //   title: "Background Checks",
+      //   icon: Icons.Background,
+      //   content: <div>Background</div>,
+      // },
+      // {
+      //   id: 4,
+      //   title: "Availability",
+      //   icon: Icons.Schedule,
+      //   content: <div>Availability</div>,
+      // },
       {
         id: 5,
         title: "Security",

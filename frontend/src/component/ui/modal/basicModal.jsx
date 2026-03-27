@@ -46,7 +46,9 @@ export default function BasicModal({
 
   if (!open) return null;
 
-  const parsedMaxWidth = MAX_WIDTH_PX[maxWidth] || 500;
+  const parsedMaxWidth = typeof maxWidth === "number"
+    ? maxWidth
+    : MAX_WIDTH_PX[maxWidth] || 500;
   const fullWidthStyle = fullWidth ? { width: "100%" } : {};
 
   const modal = (
@@ -75,19 +77,19 @@ export default function BasicModal({
       />
 
       {/* Modal wrapper — centres the dialog */}
-      <div
-        style={{
-          position:       "fixed",
-          inset:          0,
-          zIndex:         10000, // strictly over 9999
-          display:        "flex",
-          alignItems:     "center",
-          justifyContent: "center",
-          padding:        "16px",
-          overflowY:      "auto",
-        }}
-        onClick={onClose}
-      >
+        <div
+          style={{
+            position:       "fixed",
+            inset:          0,
+            zIndex:         10000, // strictly over 9999
+            display:        "flex",
+            alignItems:     "center",
+            justifyContent: "center",
+            padding:        "16px",
+            overflow:       "hidden",
+          }}
+          onClick={onClose}
+        >
         <div
           style={{ 
             background: "#fff",
@@ -136,8 +138,8 @@ export default function BasicModal({
             padding:      "24px",
             borderTop:    title   ? "none" : "1px solid #f1f5f9",
             borderBottom: actions ? "1px solid #f1f5f9" : "none",
-            overflowY:    "auto",
-            maxHeight:    "70vh",
+            overflowY:    "hidden",
+            maxHeight:    "none",
           }}>
             {children}
           </div>
