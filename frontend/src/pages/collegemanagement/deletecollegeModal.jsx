@@ -22,6 +22,7 @@ const DeleteCollegeModal = ({
 
     setError("");
     setLoading(true);
+    const startedAt = Date.now();
 
     try {
       await onConfirm?.({ id: college._id });
@@ -31,6 +32,10 @@ const DeleteCollegeModal = ({
         e?.response?.data?.message || e.message || "Delete failed"
       );
     } finally {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 250) {
+        await new Promise((resolve) => setTimeout(resolve, 250 - elapsed));
+      }
       setLoading(false);
     }
   };
@@ -77,6 +82,7 @@ const DeleteCollegeModal = ({
             Delete College
           </h5>
           <button
+            type="button"
             onClick={onClose}
             disabled={isLoading} // ✅ CHANGED
             style={{
@@ -146,6 +152,7 @@ const DeleteCollegeModal = ({
           </button>
 
           <button
+            type="button"
             onClick={handleDelete} // ✅ CHANGED
             disabled={isLoading} // ✅ CHANGED
             style={{
