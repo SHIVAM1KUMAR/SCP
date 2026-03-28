@@ -169,11 +169,12 @@ function ActionBtn({ label, onClick, variant="default", icon, disabled }) {
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function CollegeDetails() {
-  const { id }     = useParams();
+export default function CollegeDetails({ collegeId: collegeIdProp = null, embedded = false } = {}) {
+  const { id: routeId } = useParams();
   const navigate   = useNavigate();
   const { role }   = getAuth();
   const listRoute  = role === "Admin" ? "/admin/college" : "/superadmin/college";
+  const collegeId = collegeIdProp ?? routeId;
 
   const {
     college: collegeResponse,
@@ -186,13 +187,17 @@ export default function CollegeDetails() {
     isDeletingCollege,
     isActivatingCollege,
     isRejectingCollege,
-  } = useColleges(id);
+  } = useColleges(collegeId);
 
   const college = collegeResponse?.data?.data || collegeResponse?.data || collegeResponse || {};
 
   const [showEditModal,     setShowEditModal]     = useState(false);
   const [showDeleteModal,   setShowDeleteModal]   = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const pageStyle = embedded
+    ? { background:"transparent", minHeight:"auto", padding:0, fontFamily:font.body }
+    : { background:"#f4f6fb", minHeight:"100vh", padding:"20px 16px 48px", fontFamily:font.body };
+  const showManagementActions = !embedded;
 
   // ── Loading ──
   if (isCollegeLoading) {
@@ -283,7 +288,11 @@ export default function CollegeDetails() {
         }
       `}</style>
 
-      <div style={{ background:"#f4f6fb", minHeight:"100vh", padding:"20px 16px 48px", fontFamily:font.body }}>
+      <div
+        style={pageStyle}
+        data-embedded={embedded ? "true" : "false"}
+        data-management={showManagementActions ? "true" : "false"}
+      >
 
         {/* ── Hero Header ── */}
         <div style={{ background:C.white, borderRadius:18, border:`1px solid ${C.border}`, boxShadow:C.shadowMd, overflow:"hidden", marginBottom:20 }}>

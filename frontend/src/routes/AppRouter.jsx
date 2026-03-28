@@ -9,7 +9,7 @@ import MainLayout from "../layouts/MainLayout";
 import AccountSettings from "../pages/accountsetting/accountSetting";
 import CollegeManagement from "../pages/collegemanagement/CollegeManagement";
 import CollegeDetails from "../pages/collegemanagement/collegeDetails";
-import StudentDashboard from "../pages/studentmanagement/StudentDashboard";
+//import StudentDashboard from "../pages/studentmanagement/StudentDashboard";
 import StudentManagement from "../pages/studentmanagement/StudentManagement";
 import Payments from "../pages/payments/Payments";
 
@@ -31,7 +31,7 @@ const ROLE_ROUTES = {
   ],
   Student: [
     { index: true, element: <Navigate to="colleges" replace /> },
-    { path: "colleges", element: <StudentDashboard /> },
+   // { path: "colleges", element: <StudentDashboard /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
 };

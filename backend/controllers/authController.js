@@ -50,3 +50,55 @@ export const superAdminLogin = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+////change password for all roles (SuperAdmin, Student, College) in one function to avoid code duplication
+export const changePassword = async (req, res) => {
+  try {
+    const { role, email } = req.user || {};
+    const { oldPassword, newPassword } = req.body || {};
+
+    if (!role || !email) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Old password and new password are required" });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const modelByRole = {
+      Student,
+      College,
+      SuperAdmin: Admin,
+    };
+
+    const Model = modelByRole[role];
+    if (!Model) {
+      return res.status(400).json({ message: "Unsupported account role" });
+    }
+
+    const user = await Model.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    if (!user.password) {
+      return res.status(400).json({ message: "Password change is not available for this account" });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Old password is incorrect" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};

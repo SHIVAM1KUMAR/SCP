@@ -1,8 +1,10 @@
 import express from "express";
-import { superAdminLogin } from "../controllers/authController.js";
+import { changePassword, superAdminLogin } from "../controllers/authController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
 router.post("/superadmin/login", superAdminLogin);
+router.put("/change-password", protect, changePassword);
 
 export default router;

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
-import MainCard from "../../component/ui/card/Main";
-import CollegeInfo from "../../component/ui/profile/college/collegeInfo";
+import CollegeDetails from "../collegemanagement/collegeDetails";
 import StudentInfo from "../../component/ui/profile/student/studentInfo";
+import ChangePasswordForm from "../../component/forms/account/ChangePasswordForm";
 
 const Icons = {
   Profile: (
@@ -188,13 +188,7 @@ export default function AccountSettings() {
         title: "Profile",
         icon: Icons.Profile,
         content: isCollege ? (
-          <CollegeInfo
-            collegeId={id}
-            email={email}
-            userMasterId={userMasterId}
-            role={role}
-            isSmallScreen={isSmallScreen}
-          />
+          <CollegeDetails collegeId={id} embedded />
         ) : (
           <StudentInfo
             email={email}
@@ -231,7 +225,7 @@ export default function AccountSettings() {
         id: 5,
         title: "Security",
         icon: Icons.Security,
-        content: <div>Change Password</div>,
+        content: <ChangePasswordForm />,
       },
     ],
     [role, email, id, userMasterId, isSmallScreen],
