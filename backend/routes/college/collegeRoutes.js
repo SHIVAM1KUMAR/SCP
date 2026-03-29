@@ -35,9 +35,12 @@ router.post("/register", upload.fields([
   { name: 'paymentReceipt', maxCount: 1 }
 ]), registerCollege);
 router.get("/stats", getCollegeStats);
+router.get("/payments", getPayments);
+router.patch("/payments/:id/verify", verifyPayment);
 router.get("/", getColleges);
 router.post("/:id/activate", activateCollege);
 router.post("/:id/reject", rejectCollege);
+router.post("/:id/interest", toggleInterest);
 router.put("/:id", upload.fields([
   { name: "logo", maxCount: 1 },
   { name: "affiliationCert", maxCount: 1 },
@@ -46,8 +49,5 @@ router.put("/:id", upload.fields([
 ]), updateCollege);
 router.delete("/:id", deleteCollege);
 router.get("/:id", getSingleCollege);
-router.post("/:id/interest", toggleInterest);
-//These Are go in OtherPart
-router.get("/payments", getPayments);
-router.patch("/payments/:id/verify", verifyPayment);
+
 export default router;

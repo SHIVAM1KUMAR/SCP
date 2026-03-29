@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { sendCollegeCredentialsEmail } from "../../utils/mailer.js";
 
-
+// 🔥 BASE URL (IMPORTANT)
 const BASE_URL = "http://localhost:5000";
 
 const toPublicFileUrl = (value) => {
@@ -85,6 +85,8 @@ export const getColleges = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
+
+    // ✅ FIX: add full file URL
     const formatted = colleges.map((c) => {
       const obj = c.toObject();
 
@@ -122,7 +124,7 @@ export const getCollegeStats = async (req, res) => {
 
 export const registerCollege = async (req, res) => {
   try {
-
+    console.log("🔥 FULL REQ BODY:", req.body);
 
     const {
       collegeName,
@@ -134,6 +136,8 @@ export const registerCollege = async (req, res) => {
       establishedYear,
       affiliation,
     } = req.body;
+
+    // ✅ Parse address properly
     let address = {};
     if (req.body.address) {
       try {
@@ -143,6 +147,8 @@ export const registerCollege = async (req, res) => {
         address = {};
       }
     }
+
+    // ✅ Ensure all fields exist
     address = {
       street: address.street || "",
       city: address.city || "",
@@ -150,6 +156,10 @@ export const registerCollege = async (req, res) => {
       pincode: address.pincode || "",
       country: address.country || "India",
     };
+
+    console.log("📍 PARSED ADDRESS:", address);
+
+    // ✅ Create proper location
     const locationParts = [
       address.city,
       address.state,
@@ -161,13 +171,21 @@ export const registerCollege = async (req, res) => {
         ? locationParts.join(", ")
         : "Unknown";
 
+    console.log("🌍 FINAL LOCATION:", location);
+
+    // ✅ Parse courses
     let parsedCourses = [];
     if (req.body.courses) {
       try {
         parsedCourses = JSON.parse(req.body.courses);
       } catch (e) {
+        console.log("❌ Courses parse error:", e.message);
       }
     }
+
+    console.log("📚 COURSES:", parsedCourses);
+
+    // ✅ Handle documents
     const documents = {};
     if (req.files) {
       if (req.files.logo?.[0]) documents.logo = toStoredUploadPath(req.files.logo[0]);
@@ -175,6 +193,10 @@ export const registerCollege = async (req, res) => {
       if (req.files.registrationCert?.[0]) documents.registrationCert = toStoredUploadPath(req.files.registrationCert[0]);
       if (req.files.paymentReceipt?.[0]) documents.paymentReceipt = toStoredUploadPath(req.files.paymentReceipt[0]);
     }
+
+    console.log("📁 FILES:", documents);
+
+    // ✅ Check duplicate
     const existing = await College.findOne({ collegeCode });
     if (existing) {
       return res.status(400).json({
@@ -182,6 +204,8 @@ export const registerCollege = async (req, res) => {
         message: "College code already exists",
       });
     }
+
+    // ✅ Save
     const college = new College({
       collegeName,
       collegeCode,
@@ -200,6 +224,9 @@ export const registerCollege = async (req, res) => {
     });
 
     await college.save();
+
+    console.log("✅ SAVED COLLEGE:", college);
+
     res.json({
       success: true,
       message: "College registered successfully",
@@ -207,6 +234,8 @@ export const registerCollege = async (req, res) => {
     });
 
   } catch (error) {
+    console.log("❌ ERROR:", error.message);
+
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -324,6 +353,7 @@ export const getPayments = async (req, res) => {
   try {
     const colleges = await College.find().sort({ createdAt: -1 });
 
+    // ✅ format URLs
     const formatted = colleges.map((c) => {
       const obj = c.toObject();
       if (obj.documents) {
@@ -389,14 +419,14 @@ export const updateCollege = async (req, res) => {
     if (req.body.address) {
       try {
         address = JSON.parse(req.body.address);
-      } catch (e) { }
+      } catch (e) {}
     }
 
     let parsedCourses = college.courses || [];
     if (typeof req.body.courses === "string") {
       try {
         parsedCourses = JSON.parse(req.body.courses);
-      } catch (e) { }
+      } catch (e) {}
     } else if (Array.isArray(req.body.courses)) {
       parsedCourses = req.body.courses;
     }
@@ -458,7 +488,7 @@ export const getSingleCollege = async (req, res) => {
       });
     }
 
-
+    // ✅ FIX: return full URLs
     const obj = college.toObject();
 
     res.status(200).json({
