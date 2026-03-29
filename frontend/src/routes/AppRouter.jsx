@@ -11,6 +11,7 @@ import CollegeManagement from "../pages/collegemanagement/CollegeManagement";
 import CollegeDetails from "../pages/collegemanagement/collegeDetails";
 //import StudentDashboard from "../pages/studentmanagement/StudentDashboard";
 import StudentManagement from "../pages/studentmanagement/StudentManagement";
+import StudentDetails from "../pages/studentmanagement/studentDetails";
 import Payments from "../pages/payments/Payments";
 
 const ROLE_ROUTES = {
@@ -19,6 +20,8 @@ const ROLE_ROUTES = {
     { path: "college", element: <CollegeManagement /> },
     { path: "college/:id", element: <CollegeDetails /> },
     { path: "students", element: <StudentManagement /> },
+    { path: "student/:id", element: <StudentDetails /> },
+    { path: "students/:id", element: <StudentDetails /> },
     { path: "payments", element: <Payments /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],

@@ -200,10 +200,12 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
     isStudentLoading,
     isStudentError,
     deleteStudentAsync,
+    activateStudentAsync,
     approveStudentAsync,
     rejectStudentAsync,
     fetchStudent,
     isDeletingStudent,
+    isActivatingStudent,
     isApprovingStudent,
     isRejectingStudent,
   } = useStudents(studentId);
@@ -216,6 +218,9 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const [showActivateModal, setShowActivateModal] = useState(false);
   const showManagementActions = !embedded && !isStudent;
   const showProfileActions = embedded && isStudent;
+  const canActivateStudent =
+    showManagementActions &&
+    ["Approved", "Inactive"].includes(student.status);
 
   const pageStyle = embedded
     ? { background:"transparent", minHeight:"auto", padding:0, fontFamily:font.body }
@@ -313,6 +318,15 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
                   <ActionBtn label="← Back" variant="default" onClick={() => navigate(listRoute)} />
                   {student.status !== "Approved" && (
                     <ActionBtn label="Review" variant="success" icon="✓" onClick={() => setShowReviewModal(true)} disabled={isApprovingStudent || isRejectingStudent} />
+                  )}
+                  {canActivateStudent && (
+                    <ActionBtn
+                      label="Activate"
+                      variant="success"
+                      icon="✓"
+                      onClick={() => setShowActivateModal(true)}
+                      disabled={isActivatingStudent || isRejectingStudent}
+                    />
                   )}
                   <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={() => setShowEditModal(true)} />
                   <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} disabled={isDeletingStudent} />
