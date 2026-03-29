@@ -52,7 +52,7 @@ const emergencyContactColumns = [
   },
 ];
 
-const SuperAdmin = ({ userMasterId, email, isSmallScreen }) => {
+const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
   const toast = useToast();
 
   // Read logged-in user from localStorage (replaces Redux state.auth)
@@ -568,4 +568,4 @@ const SuperAdmin = ({ userMasterId, email, isSmallScreen }) => {
   );
 };
 
-export default SuperAdmin;
+export default SuperAdminProfile;
