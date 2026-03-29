@@ -20,16 +20,24 @@ const ROLE_ROUTES = {
     { path: "college", element: <CollegeManagement /> },
     { path: "college/:id", element: <CollegeDetails /> },
     { path: "students", element: <StudentManagement /> },
-    { path: "student/:id", element: <StudentDetails /> },
     { path: "students/:id", element: <StudentDetails /> },
     { path: "payments", element: <Payments /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
-  College: [
+  Admin: [
     { index: true, element: <Navigate to="college" replace /> },
     { path: "college", element: <CollegeManagement /> },
     { path: "college/:id", element: <CollegeDetails /> },
     { path: "students", element: <StudentManagement /> },
+    { path: "students/:id", element: <StudentDetails /> },
+    { path: "account-settings", element: <AccountSettings /> },
+  ],
+  College: [
+    { index: true, element: <Navigate to="students" replace /> },
+    { path: "students", element: <StudentManagement scope="college" view="all" /> },
+    { path: "students/:id", element: <StudentDetails /> },
+    { path: "applied-students", element: <StudentManagement scope="college" view="applied" /> },
+    { path: "applied-students/:id", element: <StudentDetails /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
   Student: [
@@ -43,7 +51,8 @@ const ROLE_ROUTES = {
 
 const ROOT_REDIRECT = {
   SuperAdmin: "/superadmin/college",
-  College: "/college/college",
+  Admin: "/admin/college",
+  College: "/college/students",
   Student: "/student/colleges",
 };
 
@@ -70,6 +79,11 @@ const AppRouter = () => {
               path: "superadmin",
               element: <Outlet />,
               children: ROLE_ROUTES.SuperAdmin,
+            },
+            {
+              path: "admin",
+              element: <Outlet />,
+              children: ROLE_ROUTES.Admin,
             },
             {
               path: "college",

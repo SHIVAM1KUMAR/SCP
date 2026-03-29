@@ -22,6 +22,7 @@ export default function CollegeManagement() {
   const { role, email, id, userMasterId } = getAuth();
   const roleLower = String(role || "").toLowerCase();
   const isStudent = roleLower === "student";
+  const showPaymentColumn = !isStudent;
   const baseCollegeRoute = roleLower === "admin" ? "/admin/college" : isStudent ? "/student/colleges" : "/superadmin/college";
   const studentLookupId = isStudent ? (id || userMasterId || null) : null;
   const { student: currentStudent, fetchStudent: fetchCurrentStudent } = useStudents(studentLookupId);
@@ -146,7 +147,7 @@ export default function CollegeManagement() {
                 <th style={th}>Type</th>
                 <th style={th}>Email</th>
                 <th style={th}>Status</th>
-                <th style={th}>Payment</th>
+                {showPaymentColumn && <th style={th}>Payment</th>}
                 <th style={th}>Registered</th>
                 <th style={{ ...th, textAlign: "center" }}>{isStudent ? "Apply" : "Actions"}</th>
               </tr>
@@ -154,7 +155,7 @@ export default function CollegeManagement() {
             <tbody>
               {isLoadingColleges ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: 40 }}>
+                  <td colSpan={showPaymentColumn ? 8 : 7} style={{ textAlign: "center", padding: 40 }}>
                     <Loader size={30} />
                   </td>
                 </tr>
@@ -181,11 +182,13 @@ export default function CollegeManagement() {
                         {c.status}
                       </span>
                     </td>
-                    <td style={td}>
-                      <span className={`badge bg-${c.paymentStatus === "Paid" ? "success" : "danger"}`}>
-                        {c.paymentStatus || "-"}
-                      </span>
-                    </td>
+                    {showPaymentColumn && (
+                      <td style={td}>
+                        <span className={`badge bg-${c.paymentStatus === "Paid" ? "success" : "danger"}`}>
+                          {c.paymentStatus || "-"}
+                        </span>
+                      </td>
+                    )}
                     <td style={td}>{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
                     <td style={{ ...td, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
                       {isStudent ? (
@@ -235,7 +238,7 @@ export default function CollegeManagement() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                  <td colSpan={showPaymentColumn ? 8 : 7} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                     No colleges found
                   </td>
                 </tr>

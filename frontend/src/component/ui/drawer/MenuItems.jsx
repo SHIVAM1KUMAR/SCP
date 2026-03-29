@@ -98,7 +98,8 @@ const ALL_MENU_ITEMS = {
   ],
 
   College: [
-    { moduleId: 1, label: "Dashboard",       icon: Icons.College,   path: "/college/counselor" },
+    { moduleId: 3, label: "Student Management", icon: Icons.Students, path: "/college/students" },
+    { moduleId: 13, label: "Applied Students", icon: Icons.Admission, path: "/college/applied-students" },
   ],
 };
 
@@ -114,6 +115,7 @@ const ENABLED_MODULE_IDS = [
   // 5,   // User Management
   // 6,   // Reports
   // 7,   // Settings
+  13,  // College applied students
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

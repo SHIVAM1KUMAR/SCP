@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
-import CollegeDetails from "../collegemanagement/collegeDetails";
 import StudentDetails from "../studentmanagement/studentDetails";
 import StudentInfo from "../../component/ui/profile/student/studentInfo";
+import CollegeInfo from "../../component/ui/profile/college/collegeInfo";
 import ChangePasswordForm from "../../component/forms/account/ChangePasswordForm";
 
 const Icons = {
@@ -181,6 +181,7 @@ export default function AccountSettings() {
   const isStudent = roleLower === "student";
   const isCollege = roleLower === "college";
   const isSuperAdmin = roleLower === "superadmin";
+  const collegeAccountId = id || userMasterId || user.collegeId || null;
 
   const tabs = useMemo(
     () => [
@@ -194,7 +195,13 @@ export default function AccountSettings() {
             embedded
           />
         ) : isCollege ? (
-          <CollegeDetails collegeId={id} embedded />
+          <CollegeInfo
+            email={email}
+            collegeId={collegeAccountId}
+            userMasterId={userMasterId}
+            role={role}
+            isSmallScreen={isSmallScreen}
+          />
         ) : (
           <StudentInfo
             email={email}
