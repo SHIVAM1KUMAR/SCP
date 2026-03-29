@@ -1,5 +1,5 @@
-import College from "../../models/college/college.js";
-import Student from "../../models/student/student.js";
+import College from "../../models/college/collegeModal.js";
+import Student from "../../models/student/studentModal.js";
 import bcrypt from "bcryptjs";
 import path from "path";
 import { sendCollegeCredentialsEmail } from "../../utils/mailer.js";

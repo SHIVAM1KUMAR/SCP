@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import path from "path";
-import Student from "../../models/student/student.js";
+import Student from "../../models/student/studentModal.js";
 import { sendCredentialsEmail } from "../../utils/mailer.js";
 
 const BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";

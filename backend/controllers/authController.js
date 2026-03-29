@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import generateToken from "../utils/generateToken.js";
 import SuperAdmin from "../models/superAdmin.js";
-import Student from "../models/student/student.js";
-import College from "../models/college/college.js";
+import Student from "../models/student/studentModal.js";
+import College from "../models/college/collegeModal.js";
 
 const BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
 
