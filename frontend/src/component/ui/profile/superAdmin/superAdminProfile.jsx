@@ -11,7 +11,7 @@ import BasicTable from "../../table/basicTable";
 import { formatPhoneNumber } from "../../../../utils/formatPhoneNumber";
 import dayjs from "dayjs";
 import { useUserProfile } from "../../../../hooks/useUserProfile";
-import { StudentModal } from "../../studentmanagement/StudentModal";
+import SuperAdminModal from "./SuperAdminModal";
 // ─── StudentInfo ──────────────────────────────────────────────────────────────
 // AmniCare: PersonalInfo (user = student in EduAdmit)
 // EduAdmit: MUI Grid/Box/Radio/Divider → Bootstrap row/col/hr
@@ -114,29 +114,61 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
   };
 
   const handleSubmit = async (data) => {
-    if (!userProfile?.userMasterId) return;
-    const nameParts = String(data?.studentName || "")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-    const [firstName = "", ...remainingNames] = nameParts;
-    const lastName = remainingNames.join(" ");
-    const payload = {
-      ...userProfile,
-      firstName: firstName || userProfile?.firstName,
-      lastName: lastName || userProfile?.lastName,
-      email: data?.email || userProfile?.email,
-      addresses: userProfile?.addresses?.map((a) => ({
-        ...a,
-        userMasterId: userProfile.userMasterId,
-      })),
-      emergencyContacts: userProfile?.emergencyContacts?.map((c) => ({
-        ...c,
-        userMasterId: userProfile.userMasterId,
-      })),
+    const hasAddressData = [
+      data?.addressLine1,
+      data?.addressLine2,
+      data?.city,
+      data?.state,
+      data?.zipCode,
+    ].some((value) => String(value || "").trim() !== "");
+
+    const hasEmergencyContactData = [
+      data?.contactName,
+      data?.relationship,
+      data?.contactEmail,
+      data?.contactPhone,
+      data?.contactAddress,
+    ].some((value) => String(value || "").trim() !== "");
+
+    const nextAddress = {
+      addressLine1: data?.addressLine1 || userProfile?.addresses?.[0]?.addressLine1 || "",
+      addressLine2: data?.addressLine2 || userProfile?.addresses?.[0]?.addressLine2 || "",
+      city: data?.city || userProfile?.addresses?.[0]?.city || "",
+      state: data?.state || userProfile?.addresses?.[0]?.state || "",
+      zipCode: data?.zipCode || userProfile?.addresses?.[0]?.zipCode || "",
+      isPrimary: true,
     };
-    await updateProfile.mutateAsync(payload);
-    setOpenEditModal(false);
+
+    const nextEmergencyContact = {
+      contactName: data?.contactName || userProfile?.emergencyContacts?.[0]?.contactName || "",
+      relationship: data?.relationship || userProfile?.emergencyContacts?.[0]?.relationship || "",
+      email: data?.contactEmail || userProfile?.emergencyContacts?.[0]?.email || "",
+      phone: data?.contactPhone || userProfile?.emergencyContacts?.[0]?.phone || "",
+      address: data?.contactAddress || userProfile?.emergencyContacts?.[0]?.address || "",
+    };
+
+    const payload = {
+      firstName: data?.firstName || userProfile?.firstName,
+      middleName: data?.middleName || userProfile?.middleName,
+      lastName: data?.lastName || userProfile?.lastName,
+      email: data?.email || userProfile?.email,
+      phoneNumber: data?.phoneNumber || userProfile?.phoneNumber,
+      roleName: data?.roleName || userProfile?.roleName,
+      npiNumber: data?.npiNumber || userProfile?.npiNumber,
+      employmentType: data?.employmentType || userProfile?.employmentType,
+      gender: data?.gender || userProfile?.gender,
+      dob: data?.dob || userProfile?.dob,
+      hireDate: data?.hireDate || userProfile?.hireDate,
+      addresses: hasAddressData ? [nextAddress] : (userProfile?.addresses || []),
+      emergencyContacts: hasEmergencyContactData ? [nextEmergencyContact] : (userProfile?.emergencyContacts || []),
+    };
+    try {
+      await updateProfile.mutateAsync(payload);
+      toast("Profile updated successfully.", "success");
+      setOpenEditModal(false);
+    } catch (error) {
+      toast(error?.response?.data?.message || "Failed to update profile.", "error");
+    }
   };
 
   // Address table columns
@@ -192,8 +224,8 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
   return (
     <div>
       <BasicCard
-        title="Student Profile"
-        subtitle="Identity and personal details"
+        title="Super Admin Profile"
+        subtitle="Identity and administrative details"
         actions={
           <button
             style={{
@@ -208,7 +240,7 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
             }}
             onClick={() => setOpenEditModal(true)}
           >
-            {isSmallScreen ? "Edit" : "Edit Student Info"}
+            {isSmallScreen ? "Edit" : "Edit Profile"}
           </button>
         }
       >
@@ -359,7 +391,7 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
                       background: "#22c55e",
                     }}
                   />
-                  {userProfile?.roleName || authUser.role || "Student"}
+                  {userProfile?.roleName || authUser.role || "Super Admin"}
                 </div>
                 <div style={{ fontSize: 13, color: "#64748b" }}>
                   {userProfile?.email || authUser.email}
@@ -421,12 +453,12 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
                       marginBottom: 4,
                     }}
                   >
-                    Enrollment
+                    Admin ID
                   </div>
                   <div
                     style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}
                   >
-                    {userProfile?.npiNumber || "—"}
+                    {userProfile?.npiNumber || userProfile?.userMasterId || "—"}
                   </div>
                 </div>
               </div>
@@ -449,8 +481,8 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
             <ProfileDetailRow label="Role" value={userProfile?.roleName} />
             <hr className="my-0" style={{ borderColor: "#f0f3f7" }} />
             <ProfileDetailRow
-              label="Enrollment No"
-              value={userProfile?.npiNumber}
+              label="Admin ID"
+              value={userProfile?.npiNumber || userProfile?.userMasterId}
             />
             <hr className="my-0" style={{ borderColor: "#f0f3f7" }} />
             <ProfileDetailRow label="Email" value={userProfile?.email} />
@@ -475,12 +507,12 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
             />
             <hr className="my-0" style={{ borderColor: "#f0f3f7" }} />
             <ProfileDetailRow
-              label="Enrollment Type"
+              label="Account Type"
               value={userProfile?.employmentType || "—"}
             />
             <hr className="my-0" style={{ borderColor: "#f0f3f7" }} />
             <ProfileDetailRow
-              label="Enrollment Date"
+              label="Joined On"
               value={
                 userProfile?.hireDate
                   ? dayjs(userProfile.hireDate).format("MM/DD/YYYY")
@@ -537,15 +569,22 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
 
       {/* Modals */}
       {openEditModal && (
-        <StudentModal
+        <SuperAdminModal
           editData={{
             _id: userProfile?.userMasterId,
-            studentName:
-              [userProfile?.firstName, userProfile?.middleName, userProfile?.lastName]
-                .filter(Boolean)
-                .join(" ") || authUser?.name || "",
+            firstName: userProfile?.firstName || "",
+            middleName: userProfile?.middleName || "",
+            lastName: userProfile?.lastName || "",
             email: userProfile?.email || authUser?.email || "",
-            status: "Active",
+            phoneNumber: userProfile?.phoneNumber || "",
+            roleName: userProfile?.roleName || "",
+            npiNumber: userProfile?.npiNumber || "",
+            employmentType: userProfile?.employmentType || "",
+            gender: userProfile?.gender || "",
+            dob: userProfile?.dob || "",
+            hireDate: userProfile?.hireDate || "",
+            addresses: userProfile?.addresses || [],
+            emergencyContacts: userProfile?.emergencyContacts || [],
           }}
           onClose={() => setOpenEditModal(false)}
           onSave={handleSubmit}
