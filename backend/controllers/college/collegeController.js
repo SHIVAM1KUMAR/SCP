@@ -333,14 +333,18 @@ export const toggleInterest = async (req, res) => {
 
     if (index === -1) {
       student.interestedColleges.push(id);
-    } else {
-      student.interestedColleges.splice(index, 1);
+      await student.save();
+
+      return res.json({
+        message: "Interest added",
+        applied: true,
+        interestedColleges: student.interestedColleges
+      });
     }
 
-    await student.save();
-
     res.json({
-      message: index === -1 ? "Interest added" : "Interest removed",
+      message: "Already applied",
+      applied: true,
       interestedColleges: student.interestedColleges
     });
 

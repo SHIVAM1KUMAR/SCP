@@ -173,7 +173,10 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
   const { id: routeId } = useParams();
   const navigate   = useNavigate();
   const { role }   = getAuth();
-  const listRoute  = role === "Admin" ? "/admin/college" : "/superadmin/college";
+  const roleLower  = String(role || "").toLowerCase();
+  const isStudent  = roleLower === "student";
+  const isAdmin    = roleLower === "admin";
+  const listRoute  = isStudent ? "/student/colleges" : isAdmin ? "/admin/college" : "/superadmin/college";
   const collegeId = collegeIdProp ?? routeId;
 
   const {
@@ -197,7 +200,7 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
   const pageStyle = embedded
     ? { background:"transparent", minHeight:"auto", padding:0, fontFamily:font.body }
     : { background:"#f4f6fb", minHeight:"100vh", padding:"20px 16px 48px", fontFamily:font.body };
-  const showManagementActions = !embedded;
+  const showManagementActions = !embedded && !isStudent;
 
   // ── Loading ──
   if (isCollegeLoading) {
@@ -317,11 +320,15 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
               {/* Actions */}
               <div className="cd-actions">
                 <ActionBtn label="← Back" variant="default" onClick={()=>navigate(listRoute)} />
-                {college.status !== "Active" && (
-                  <ActionBtn label="Activate" variant="success" icon="✓" onClick={()=>setShowActivateModal(true)} disabled={isActivatingCollege||isRejectingCollege} />
+                {showManagementActions && (
+                  <>
+                    {college.status !== "Active" && (
+                      <ActionBtn label="Activate" variant="success" icon="✓" onClick={()=>setShowActivateModal(true)} disabled={isActivatingCollege||isRejectingCollege} />
+                    )}
+                    <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={()=>setShowEditModal(true)} />
+                    <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={()=>setShowDeleteModal(true)} disabled={isDeletingCollege} />
+                  </>
                 )}
-                <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={()=>setShowEditModal(true)} />
-                <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={()=>setShowDeleteModal(true)} disabled={isDeletingCollege} />
               </div>
             </div>
 

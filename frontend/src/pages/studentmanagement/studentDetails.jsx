@@ -5,10 +5,10 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useStudents } from "../../hooks/useStudent";
-import StudentRegistrationForm from "../../component/forms/student/StudentRegistrationForm";
+import { useStudents } from "../../hooks/useStudents";
+import StudentRegistrationForm from "../../component/forms/student/studentRegistration";
 import DeleteStudentModal from "./deleteStudentModal";
-import ReviewStudentModal from "./reviewStudentModal";
+import ReviewStudentModal from "./reveiwStudentmodal";
 import { getAuth } from "../../store/slice/auth.slice";
 import ActivateStudentModal from "./activateStudentModal";
 
@@ -189,7 +189,10 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const { id: routeId } = useParams();
   const navigate        = useNavigate();
   const { role }        = getAuth();
-  const listRoute       = role === "Admin" ? "/admin/student" : "/superadmin/student";
+  const roleLower       = String(role || "").toLowerCase();
+  const isStudent       = roleLower === "student";
+  const isAdmin         = roleLower === "admin";
+  const listRoute       = isStudent ? "/student/colleges" : isAdmin ? "/admin/student" : "/superadmin/student";
   const studentId       = studentIdProp ?? routeId;
 
   const {
@@ -210,6 +213,9 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const [showEditModal,    setShowEditModal]    = useState(false);
   const [showDeleteModal,  setShowDeleteModal]  = useState(false);
   const [showReviewModal,  setShowReviewModal]  = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
+  const showManagementActions = !embedded && !isStudent;
+  const showProfileActions = embedded && isStudent;
 
   const pageStyle = embedded
     ? { background:"transparent", minHeight:"auto", padding:0, fontFamily:font.body }
@@ -302,14 +308,23 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
               </div>
 
               {/* Actions */}
-              <div className="sd-actions">
-                <ActionBtn label="← Back" variant="default" onClick={() => navigate(listRoute)} />
-                {student.status !== "Approved" && (
-                  <ActionBtn label="Review" variant="success" icon="✓" onClick={() => setShowReviewModal(true)} disabled={isApprovingStudent || isRejectingStudent} />
-                )}
-                <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={() => setShowEditModal(true)} />
-                <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} disabled={isDeletingStudent} />
-              </div>
+              {showManagementActions && (
+                <div className="sd-actions">
+                  <ActionBtn label="← Back" variant="default" onClick={() => navigate(listRoute)} />
+                  {student.status !== "Approved" && (
+                    <ActionBtn label="Review" variant="success" icon="✓" onClick={() => setShowReviewModal(true)} disabled={isApprovingStudent || isRejectingStudent} />
+                  )}
+                  <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={() => setShowEditModal(true)} />
+                  <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} disabled={isDeletingStudent} />
+                </div>
+              )}
+
+              {showProfileActions && (
+                <div className="sd-actions">
+                  <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={() => setShowEditModal(true)} />
+                  <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} disabled={isDeletingStudent} />
+                </div>
+              )}
             </div>
 
             {/* Stats strip */}
@@ -456,15 +471,25 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
         />
       )}
 
-    {showActivateModal && (
-  <ActivateStudentModal
-    student={student}
-    onClose={() => setShowActivateModal(false)}
-    onActivate={activateStudentAsync}
-    onReject={rejectStudentAsync}
-    loading={isActivatingStudent || isRejectingStudent}
-  />
-)}
+      {showReviewModal && (
+        <ReviewStudentModal
+          student={student}
+          onClose={() => setShowReviewModal(false)}
+          onApprove={approveStudentAsync}
+          onReject={rejectStudentAsync}
+          loading={isApprovingStudent || isRejectingStudent}
+        />
+      )}
+
+      {showActivateModal && (
+        <ActivateStudentModal
+          student={student}
+          onClose={() => setShowActivateModal(false)}
+          onActivate={activateStudentAsync}
+          onReject={rejectStudentAsync}
+          loading={isActivatingStudent || isRejectingStudent}
+        />
+      )}
     </>
   );
 }

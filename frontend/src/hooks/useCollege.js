@@ -58,11 +58,11 @@ export const useColleges = (collegeId = null) => {
 
   // ─── Toggle Interest ────────────────────────────
   const toggleInterestMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await axiosInstance.post(`/colleges/${id}/interest`);
+    mutationFn: async ({ id, studentEmail }) => {
+      const res = await axiosInstance.post(`/colleges/${id}/interest`, { studentEmail });
       return res.data;
     },
-    onSuccess: () => toast("Interest updated", "info"),
+    onSuccess: () => toast("College application updated", "info"),
     onError: (err) => toast(err?.response?.data?.message || "Failed to update interest", "error"),
   });
 
@@ -202,13 +202,13 @@ export const useColleges = (collegeId = null) => {
     deleteCollegeAsync: _doDelete,
     isDeletingCollege: deleteCollegeMutation.isPending,
 
-    toggleInterest: async (id) => {
-      const result = await toggleInterestMutation.mutateAsync(id);
+    toggleInterest: async (args) => {
+      const result = await toggleInterestMutation.mutateAsync(args);
       await refreshCollegeData();
       return result;
     },
-    toggleInterestAsync: async (id) => {
-      const result = await toggleInterestMutation.mutateAsync(id);
+    toggleInterestAsync: async (args) => {
+      const result = await toggleInterestMutation.mutateAsync(args);
       await refreshCollegeData();
       return result;
     },

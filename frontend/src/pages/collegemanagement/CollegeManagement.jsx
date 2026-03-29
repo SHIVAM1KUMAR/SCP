@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useColleges } from "../../hooks/useCollege";
+import { useStudents } from "../../hooks/useStudents";
 import CollegeRegistrationForm from "../../component/forms/college/CollegeRegistrationForm";
 import DeleteCollegeModal from "./deletecollegeModal";
 import { getAuth } from "../../store/slice/auth.slice";
 import Loader from "../../component/ui/loader/Loader";
 
 export default function CollegeManagement() {
-  const { colleges, isLoadingColleges, deleteCollege, fetchColleges, isDeletingCollege } = useColleges();
+  const { colleges, isLoadingColleges, deleteCollege, fetchColleges, isDeletingCollege, toggleInterestAsync } = useColleges();
 
   const [search, setSearch] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -18,8 +19,12 @@ export default function CollegeManagement() {
   const [collegeToDelete, setCollegeToDelete] = useState(null);
 
   const navigate = useNavigate();
-  const { role } = getAuth();
-  const baseCollegeRoute = role === "Admin" ? "/admin/college" : "/superadmin/college";
+  const { role, email, id, userMasterId } = getAuth();
+  const roleLower = String(role || "").toLowerCase();
+  const isStudent = roleLower === "student";
+  const baseCollegeRoute = roleLower === "admin" ? "/admin/college" : isStudent ? "/student/colleges" : "/superadmin/college";
+  const studentLookupId = isStudent ? (id || userMasterId || null) : null;
+  const { student: currentStudent, fetchStudent: fetchCurrentStudent } = useStudents(studentLookupId);
 
   const filtered = colleges?.filter((c) => {
     const q = search.toLowerCase();
@@ -34,10 +39,20 @@ export default function CollegeManagement() {
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * rowsPerPage;
   const currentItems = filtered.slice(start, start + rowsPerPage);
+  const appliedCollegeIds = new Set(
+    (currentStudent?.interestedColleges || []).map((college) => String(college?._id || college)),
+  );
 
   const handleAdd = () => {
     setSelectedCollege(null);
     setOpenAddEditModal(true);
+  };
+
+  const handleApply = async (college) => {
+    if (!email) return;
+    if (appliedCollegeIds.has(String(college._id))) return;
+    await toggleInterestAsync({ id: college._id, studentEmail: email });
+    await fetchCurrentStudent?.();
   };
 
   const handleEdit = (college) => {
@@ -87,10 +102,10 @@ export default function CollegeManagement() {
         >
           <div>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
-              Colleges
+              {isStudent ? "College List" : "Colleges"}
             </h2>
             <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#1a6fa8", fontWeight: 500 }}>
-              Manage College Applications
+              {isStudent ? "Browse colleges and apply for counselling" : "Manage College Applications"}
             </p>
           </div>
 
@@ -105,17 +120,19 @@ export default function CollegeManagement() {
                 fontSize: 13, width: 220,
               }}
             />
-            <button
-              onClick={handleAdd}
-              style={{
-                height: 36, padding: "0 16px",
-                background: "#1a6fa8", color: "#fff",
-                border: "none", borderRadius: 8,
-                fontWeight: 600, cursor: "pointer",
-              }}
-            >
-              + Add College
-            </button>
+            {!isStudent && (
+              <button
+                onClick={handleAdd}
+                style={{
+                  height: 36, padding: "0 16px",
+                  background: "#1a6fa8", color: "#fff",
+                  border: "none", borderRadius: 8,
+                  fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                + Add College
+              </button>
+            )}
           </div>
         </div>
 
@@ -131,7 +148,7 @@ export default function CollegeManagement() {
                 <th style={th}>Status</th>
                 <th style={th}>Payment</th>
                 <th style={th}>Registered</th>
-                <th style={{ ...th, textAlign: "center" }}>Actions</th>
+                <th style={{ ...th, textAlign: "center" }}>{isStudent ? "Apply" : "Actions"}</th>
               </tr>
             </thead>
             <tbody>
@@ -145,7 +162,7 @@ export default function CollegeManagement() {
                 currentItems.map((c, i) => (
                   <tr
                     key={c._id}
-                    style={{ cursor: "pointer" }}
+                    style={{ cursor: isStudent ? "default" : "pointer" }}
                     onClick={() => navigate(`${baseCollegeRoute}/${c._id}`)}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#fafbfc")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -171,28 +188,48 @@ export default function CollegeManagement() {
                     </td>
                     <td style={td}>{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
                     <td style={{ ...td, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                      <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+                      {isStudent ? (
                         <button
-                          onClick={() => handleEdit(c)}
+                          onClick={() => handleApply(c)}
+                          disabled={appliedCollegeIds.has(String(c._id))}
                           style={{
-                            background: "#e8f4fd", border: "none", borderRadius: 6,
-                            padding: "6px 12px", cursor: "pointer",
-                            color: "#1a6fa8", fontSize: 12, fontWeight: 600,
+                            background: appliedCollegeIds.has(String(c._id)) ? "#e8f4fd" : "#0f2044",
+                            color: appliedCollegeIds.has(String(c._id)) ? "#1a6fa8" : "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 14px",
+                            cursor: appliedCollegeIds.has(String(c._id)) ? "not-allowed" : "pointer",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            opacity: appliedCollegeIds.has(String(c._id)) ? 0.9 : 1,
                           }}
                         >
-                          Edit
+                          {appliedCollegeIds.has(String(c._id)) ? "Applied" : "Apply"}
                         </button>
-                        <button
-                          onClick={() => handleDeleteClick(c)}
-                          style={{
-                            background: "#fff5f5", border: "none", borderRadius: 6,
-                            padding: "6px 12px", cursor: "pointer",
-                            color: "#e53e3e", fontSize: 12, fontWeight: 600,
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      ) : (
+                        <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+                          <button
+                            onClick={() => handleEdit(c)}
+                            style={{
+                              background: "#e8f4fd", border: "none", borderRadius: 6,
+                              padding: "6px 12px", cursor: "pointer",
+                              color: "#1a6fa8", fontSize: 12, fontWeight: 600,
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(c)}
+                            style={{
+                              background: "#fff5f5", border: "none", borderRadius: 6,
+                              padding: "6px 12px", cursor: "pointer",
+                              color: "#e53e3e", fontSize: 12, fontWeight: 600,
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -256,7 +293,7 @@ export default function CollegeManagement() {
       </div>
 
       {/* ADD / EDIT MODAL */}
-      {openAddEditModal && (
+      {!isStudent && openAddEditModal && (
         <CollegeRegistrationForm
           college={selectedCollege}
           collegeId={selectedCollege?._id || null}
@@ -266,7 +303,7 @@ export default function CollegeManagement() {
       )}
 
       {/* DELETE MODAL */}
-      {showDeleteModal && (
+      {!isStudent && showDeleteModal && (
         <DeleteCollegeModal
           show={showDeleteModal}
           onClose={() => {

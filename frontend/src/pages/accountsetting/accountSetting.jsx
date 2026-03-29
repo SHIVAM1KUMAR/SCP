@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import CollegeDetails from "../collegemanagement/collegeDetails";
+import StudentDetails from "../studentmanagement/studentDetails";
 import StudentInfo from "../../component/ui/profile/student/studentInfo";
 import ChangePasswordForm from "../../component/forms/account/ChangePasswordForm";
 
@@ -187,7 +188,12 @@ export default function AccountSettings() {
         id: 0,
         title: "Profile",
         icon: Icons.Profile,
-        content: isCollege ? (
+        content: isStudent ? (
+          <StudentDetails
+            studentId={id || userMasterId || user.studentId}
+            embedded
+          />
+        ) : isCollege ? (
           <CollegeDetails collegeId={id} embedded />
         ) : (
           <StudentInfo
