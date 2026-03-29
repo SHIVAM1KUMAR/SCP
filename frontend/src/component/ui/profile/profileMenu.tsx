@@ -65,8 +65,8 @@ const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -74,7 +74,7 @@ const menuRef = useRef<HTMLDivElement>(null);
 
 const [menuItemHover, setMenuItemHover] = useState<'account-settings' | 'logout' | null>(null);
 
-const handleMenuAction = useCallback((action) => {
+const handleMenuAction = useCallback((action: 'account-settings' | 'logout') => {
   setOpen(false);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");

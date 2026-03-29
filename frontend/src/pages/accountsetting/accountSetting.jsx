@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import CollegeDetails from "../collegemanagement/collegeDetails";
 import StudentDetails from "../studentmanagement/studentDetails";
-import StudentInfo from "../../component/ui/profile/student/studentInfo";
+import SuperAdmin from "../../component/ui/profile/superAdmin/superAdminProfile";
 import ChangePasswordForm from "../../component/forms/account/ChangePasswordForm";
 
 const Icons = {
@@ -196,7 +196,7 @@ export default function AccountSettings() {
         ) : isCollege ? (
           <CollegeDetails collegeId={id} embedded />
         ) : (
-          <StudentInfo
+          <SuperAdmin
             email={email}
             userMasterId={userMasterId}
             isSmallScreen={isSmallScreen}

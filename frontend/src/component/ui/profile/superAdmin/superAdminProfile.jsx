@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useToast } from "../../../../context/ToastContext";
 import BasicCard from "../../card/Basic";
-import { ProfileDetailRow } from "../../../../component/ui/details/profiledetailRow";
+import { ProfileDetailRow } from "../../details/profiledetailRow";
 import Button from "../../button/Button";
 import Loader from "../../loader/Loader";
 import TableSkeleton from "../../loader/TableSkeleton";
@@ -11,7 +11,7 @@ import BasicTable from "../../table/basicTable";
 import { formatPhoneNumber } from "../../../../utils/formatPhoneNumber";
 import dayjs from "dayjs";
 import { useUserProfile } from "../../../../hooks/useUserProfile";
-import { StudentModal } from "../../../ui/studentmanagement/StudentModal";
+import { StudentModal } from "../../studentmanagement/StudentModal";
 // ─── StudentInfo ──────────────────────────────────────────────────────────────
 // AmniCare: PersonalInfo (user = student in EduAdmit)
 // EduAdmit: MUI Grid/Box/Radio/Divider → Bootstrap row/col/hr
@@ -52,7 +52,7 @@ const emergencyContactColumns = [
   },
 ];
 
-const StudentInfo = ({ userMasterId, email, isSmallScreen }) => {
+const SuperAdmin = ({ userMasterId, email, isSmallScreen }) => {
   const toast = useToast();
 
   // Read logged-in user from localStorage (replaces Redux state.auth)
@@ -568,4 +568,4 @@ const StudentInfo = ({ userMasterId, email, isSmallScreen }) => {
   );
 };
 
-export default StudentInfo;
+export default SuperAdmin;
