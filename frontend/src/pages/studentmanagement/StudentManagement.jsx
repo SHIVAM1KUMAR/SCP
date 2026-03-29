@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStudents } from "../../hooks/useStudents";
 import StudentRegistrationForm from "../../component/forms/student/studentRegistration";
@@ -6,7 +6,7 @@ import DeleteStudentModal from "./deleteStudentModal";
 import { getAuth } from "../../store/slice/auth.slice";
 import Loader from "../../component/ui/loader/Loader";
 
-export default function StudentManagement() {
+export default function StudentManagement({ scope = "default", view = "all" } = {}) {
   const { students, isLoadingStudents, deleteStudent, fetchStudents, isDeletingStudent } = useStudents();
 
   const [search, setSearch]           = useState("");
@@ -18,12 +18,36 @@ export default function StudentManagement() {
   const [studentToDelete, setStudentToDelete]   = useState(null);
 
   const navigate = useNavigate();
-  const { role } = getAuth();
+  const { role, id, userMasterId } = getAuth();
+  const roleLower = String(role || "").toLowerCase();
+  const isCollege = scope === "college" || roleLower === "college";
+  const currentCollegeId = id || userMasterId || null;
   const baseStudentRoute =
-    role === "Admin" ? "/admin/student" : "/superadmin/student";
+    roleLower === "admin"
+      ? "/admin/students"
+      : isCollege
+        ? `/college/${view === "applied" ? "applied-students" : "students"}`
+        : "/superadmin/students";
 
-  const filtered =
-    students?.filter((s) => {
+  const collegeAppliedStudents = useMemo(() => {
+    if (!isCollege || !currentCollegeId) return [];
+    return (
+      students?.filter((student) =>
+        (student.interestedColleges || []).some(
+          (college) => String(college?._id || college) === String(currentCollegeId),
+        ),
+      ) || []
+    );
+  }, [currentCollegeId, isCollege, students]);
+
+  const activeStudents = isCollege
+    ? view === "applied"
+      ? collegeAppliedStudents
+      : (students || [])
+    : (students || []);
+
+  const filtered = useMemo(
+    () => activeStudents.filter((s) => {
       const q = search.toLowerCase();
       return (
         s.firstName?.toLowerCase().includes(q) ||
@@ -31,7 +55,9 @@ export default function StudentManagement() {
         s.email?.toLowerCase().includes(q) ||
         s.phone?.toLowerCase().includes(q)
       );
-    }) || [];
+    }),
+    [activeStudents, search],
+  );
 
   const totalPages  = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const safePage    = Math.min(page, totalPages);
@@ -65,6 +91,8 @@ export default function StudentManagement() {
     await fetchStudents?.();
   };
 
+  const canManageStudents = roleLower === "superadmin" || roleLower === "admin";
+
   return (
     <div style={{ fontFamily: "'Outfit', sans-serif" }}>
       <div
@@ -89,10 +117,18 @@ export default function StudentManagement() {
         >
           <div>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
-              Students
+              {isCollege && view === "applied"
+                ? "Applied Students"
+                : isCollege
+                  ? "Student Management"
+                  : "Students"}
             </h2>
             <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#1a6fa8", fontWeight: 500 }}>
-              Manage Student Applications
+              {isCollege && view === "applied"
+                ? "Students who applied to your college"
+                : isCollege
+                  ? "All students in your management list"
+                  : "Manage Student Applications"}
             </p>
           </div>
 
@@ -107,17 +143,19 @@ export default function StudentManagement() {
                 fontSize: 13, width: 220,
               }}
             />
-            <button
-              onClick={handleAdd}
-              style={{
-                height: 36, padding: "0 16px",
-                background: "#1a6fa8", color: "#fff",
-                border: "none", borderRadius: 8,
-                fontWeight: 600, cursor: "pointer",
-              }}
-            >
-              + Add Student
-            </button>
+            {canManageStudents && (
+              <button
+                onClick={handleAdd}
+                style={{
+                  height: 36, padding: "0 16px",
+                  background: "#1a6fa8", color: "#fff",
+                  border: "none", borderRadius: 8,
+                  fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                + Add Student
+              </button>
+            )}
           </div>
         </div>
 
@@ -135,13 +173,13 @@ export default function StudentManagement() {
                 <th style={th}>12th %</th>
                 <th style={th}>Status</th>
                 <th style={th}>Applied</th>
-                <th style={{ ...th, textAlign: "center" }}>Actions</th>
+                {canManageStudents && <th style={{ ...th, textAlign: "center" }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {isLoadingStudents ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center", padding: 40 }}>
+                  <td colSpan={canManageStudents ? 10 : 9} style={{ textAlign: "center", padding: 40 }}>
                     <Loader size={30} />
                   </td>
                 </tr>
@@ -192,39 +230,41 @@ export default function StudentManagement() {
                         ? new Date(s.createdAt).toLocaleDateString("en-IN")
                         : "-"}
                     </td>
-                    <td
-                      style={{ ...td, textAlign: "center" }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
-                        <button
-                          onClick={() => handleEdit(s)}
-                          style={{
-                            background: "#e8f4fd", border: "none", borderRadius: 6,
-                            padding: "6px 12px", cursor: "pointer",
-                            color: "#1a6fa8", fontSize: 12, fontWeight: 600,
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(s)}
-                          style={{
-                            background: "#fff5f5", border: "none", borderRadius: 6,
-                            padding: "6px 12px", cursor: "pointer",
-                            color: "#e53e3e", fontSize: 12, fontWeight: 600,
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+                    {canManageStudents && (
+                      <td
+                        style={{ ...td, textAlign: "center" }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+                          <button
+                            onClick={() => handleEdit(s)}
+                            style={{
+                              background: "#e8f4fd", border: "none", borderRadius: 6,
+                              padding: "6px 12px", cursor: "pointer",
+                              color: "#1a6fa8", fontSize: 12, fontWeight: 600,
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(s)}
+                            style={{
+                              background: "#fff5f5", border: "none", borderRadius: 6,
+                              padding: "6px 12px", cursor: "pointer",
+                              color: "#e53e3e", fontSize: 12, fontWeight: 600,
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={canManageStudents ? 10 : 9}
                     style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}
                   >
                     No students found
