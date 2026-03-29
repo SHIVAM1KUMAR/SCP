@@ -1,8 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import ActivateCollegeModal from "../collegemanagement/activateCollege";
 
 const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '');
 const BASE_URL = API.replace(/\/api\/?$/, "");
+
+const toFileUrl = (value) => {
+  if (!value) return "";
+  const normalized = String(value).replace(/\\/g, "/");
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  const uploadsMatch = normalized.match(/(?:^|\/)uploads\/(.+)$/i);
+  if (uploadsMatch?.[1]) {
+    const uploadPath = uploadsMatch[1]
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+    return `${BASE_URL}/uploads/${uploadPath}`;
+  }
+  return `${BASE_URL}/${normalized.replace(/^\/+/, "")}`;
+};
+
+const getDocumentRef = (docs, key) =>
+  docs?.[key]?.url || docs?.[key]?.path || docs?.[key] || "";
 
 function authHeader() {
   const token = localStorage.getItem("token");
@@ -18,9 +38,12 @@ async function apiFetch(path, opts = {}) {
 
 export default function Payments() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(false);
   const [receiptTarget, setReceiptTarget] = useState(null);
+  const [selectedCollege, setSelectedCollege] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -38,14 +61,39 @@ export default function Payments() {
     fetchPayments();
   }, [fetchPayments]);
 
-  const verifyPayment = async (collegeId) => {
+  const verifyPayment = async ({ id }) => {
     try {
-      const data = await apiFetch(`/colleges/payments/${collegeId}/verify`, { method: "PATCH" });
+      const data = await apiFetch(`/colleges/payments/${id}/verify`, { method: "PATCH" });
       toast(data.message || "Payment verified and college activated!", "success");
       fetchPayments();
+      setShowReviewModal(false);
+      setSelectedCollege(null);
     } catch (e) {
       toast(e.message, "error");
     }
+  };
+
+  const rejectCollege = async ({ id, payload }) => {
+    try {
+      const res = await fetch(`${API}/colleges/${id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify(payload || {}),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Rejection failed");
+      toast(data.message || "College rejected", "warning");
+      fetchPayments();
+      setShowReviewModal(false);
+      setSelectedCollege(null);
+    } catch (e) {
+      toast(e.message, "error");
+    }
+  };
+
+  const openReview = (college) => {
+    setSelectedCollege(college);
+    setShowReviewModal(true);
   };
 
   const th = { padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#1a6fa8", background: "#f8fafc", borderBottom: "2px solid #e5e9f0", textAlign: "left" };
@@ -87,18 +135,28 @@ export default function Payments() {
                   </td>
                   <td style={{ ...td, textAlign: "center" }}>
                     <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                      {c.documents?.paymentReceipt && (
-                        <button onClick={() => setReceiptTarget(c.documents.paymentReceipt)} 
-                          style={{ padding: "6px 12px", background: "#f0f7ff", color: "#1a6fa8", border: "1px solid #bfdbfe", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
+                      {getDocumentRef(c.documentFiles || c.documents || {}, "paymentReceipt") && (
+                        <button
+                          onClick={() => setReceiptTarget(getDocumentRef(c.documentFiles || c.documents || {}, "paymentReceipt"))}
+                          style={{ padding: "6px 12px", background: "#f0f7ff", color: "#1a6fa8", border: "1px solid #bfdbfe", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 12 }}
+                        >
                           View Receipt
                         </button>
                       )}
                       {(c.paymentStatus === 'Uploaded' || c.paymentStatus === 'Pending') && c.status === 'Pending' && (
-                        <button onClick={() => verifyPayment(c._id)} 
-                          style={{ padding: "6px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
-                          Verify & Activate
+                        <button
+                          onClick={() => openReview(c)}
+                          style={{ padding: "6px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 12 }}
+                        >
+                          Review & Activate
                         </button>
                       )}
+                      <button
+                        onClick={() => navigate(`/superadmin/college/${c._id}`)}
+                        style={{ padding: "6px 12px", background: "#fff", color: "#1e293b", border: "1px solid #dbe1ea", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 12 }}
+                      >
+                        View College
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -116,19 +174,31 @@ export default function Payments() {
               <button onClick={() => setReceiptTarget(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>×</button>
             </div>
             <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center" }}>
-              {receiptTarget.endsWith(".pdf") ? (
-                <iframe src={`${BASE_URL}/${receiptTarget.replace(/\\/g, "/")}`} width="100%" height="500px" title="Receipt" />
+              {receiptTarget.toLowerCase().includes(".pdf") ? (
+                <iframe src={toFileUrl(receiptTarget)} width="100%" height="500px" title="Receipt" />
               ) : (
-                <img src={`${BASE_URL}/${receiptTarget.replace(/\\/g, "/")}`} alt="Receipt" style={{ maxWidth: "100%", objectFit: "contain" }} />
+                <img src={toFileUrl(receiptTarget)} alt="Receipt" style={{ maxWidth: "100%", objectFit: "contain" }} />
               )}
             </div>
             <div style={{ marginTop: 16, textAlign: "center" }}>
-              <a href={`${BASE_URL}/${receiptTarget.replace(/\\/g, "/")}`} download target="_blank" rel="noreferrer" style={{ display: "inline-block", padding: "10px 20px", background: "#1a6fa8", color: "#fff", textDecoration: "none", borderRadius: 6, fontWeight: 600 }}>
+              <a href={toFileUrl(receiptTarget)} download target="_blank" rel="noreferrer" style={{ display: "inline-block", padding: "10px 20px", background: "#1a6fa8", color: "#fff", textDecoration: "none", borderRadius: 6, fontWeight: 600 }}>
                 Download Receipt
               </a>
             </div>
           </div>
         </div>
+      )}
+
+      {showReviewModal && selectedCollege && (
+        <ActivateCollegeModal
+          college={selectedCollege}
+          onClose={() => {
+            setShowReviewModal(false);
+            setSelectedCollege(null);
+          }}
+          onActivate={verifyPayment}
+          onReject={rejectCollege}
+        />
       )}
     </div>
   );
