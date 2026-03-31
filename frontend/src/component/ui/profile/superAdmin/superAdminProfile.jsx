@@ -113,55 +113,7 @@ const SuperAdminProfile = ({ userMasterId, email, isSmallScreen }) => {
     setOpenConfirmModal(false);
   };
 
-  const handleSubmit = async (data) => {
-    const hasAddressData = [
-      data?.addressLine1,
-      data?.addressLine2,
-      data?.city,
-      data?.state,
-      data?.zipCode,
-    ].some((value) => String(value || "").trim() !== "");
-
-    const hasEmergencyContactData = [
-      data?.contactName,
-      data?.relationship,
-      data?.contactEmail,
-      data?.contactPhone,
-      data?.contactAddress,
-    ].some((value) => String(value || "").trim() !== "");
-
-    const nextAddress = {
-      addressLine1: data?.addressLine1 || userProfile?.addresses?.[0]?.addressLine1 || "",
-      addressLine2: data?.addressLine2 || userProfile?.addresses?.[0]?.addressLine2 || "",
-      city: data?.city || userProfile?.addresses?.[0]?.city || "",
-      state: data?.state || userProfile?.addresses?.[0]?.state || "",
-      zipCode: data?.zipCode || userProfile?.addresses?.[0]?.zipCode || "",
-      isPrimary: true,
-    };
-
-    const nextEmergencyContact = {
-      contactName: data?.contactName || userProfile?.emergencyContacts?.[0]?.contactName || "",
-      relationship: data?.relationship || userProfile?.emergencyContacts?.[0]?.relationship || "",
-      email: data?.contactEmail || userProfile?.emergencyContacts?.[0]?.email || "",
-      phone: data?.contactPhone || userProfile?.emergencyContacts?.[0]?.phone || "",
-      address: data?.contactAddress || userProfile?.emergencyContacts?.[0]?.address || "",
-    };
-
-    const payload = {
-      firstName: data?.firstName || userProfile?.firstName,
-      middleName: data?.middleName || userProfile?.middleName,
-      lastName: data?.lastName || userProfile?.lastName,
-      email: data?.email || userProfile?.email,
-      phoneNumber: data?.phoneNumber || userProfile?.phoneNumber,
-      roleName: data?.roleName || userProfile?.roleName,
-      npiNumber: data?.npiNumber || userProfile?.npiNumber,
-      employmentType: data?.employmentType || userProfile?.employmentType,
-      gender: data?.gender || userProfile?.gender,
-      dob: data?.dob || userProfile?.dob,
-      hireDate: data?.hireDate || userProfile?.hireDate,
-      addresses: hasAddressData ? [nextAddress] : (userProfile?.addresses || []),
-      emergencyContacts: hasEmergencyContactData ? [nextEmergencyContact] : (userProfile?.emergencyContacts || []),
-    };
+  const handleSubmit = async (payload) => {
     try {
       await updateProfile.mutateAsync(payload);
       toast("Profile updated successfully.", "success");
