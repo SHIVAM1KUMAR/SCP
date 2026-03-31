@@ -8,13 +8,14 @@ export default function Search({
     onChange,
     placeholder = "Search…",
     width       = "auto",
+    style = {},
   }) {
     const handleChange = (e) => {
-      onChange(e.target.value.trim());
+      onChange?.(e.target.value);
     };
   
     return (
-      <div style={{ width, position: "relative" }}>
+      <div style={{ width, position: "relative", ...style }}>
         {/* Search icon */}
         <svg
           style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}

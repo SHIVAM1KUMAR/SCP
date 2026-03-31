@@ -16,6 +16,12 @@ const VARIANT_STYLES = {
     color: "#0f2044",
     border: "1.5px solid #e2e8f4",
   },
+  success: {
+    background: "#16a34a",
+    color: "#ffffff",
+    border: "1px solid #16a34a",
+    boxShadow: "0 4px 14px rgba(22,163,74,.18)",
+  },
   outline: {
     background: "#ffffff",
     color: "#0f2044",

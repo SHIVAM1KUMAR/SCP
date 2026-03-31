@@ -7,6 +7,8 @@ import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useStudents } from "../../hooks/useStudents";
 import StudentRegistrationForm from "../../component/forms/student/studentRegistration";
+import Button from "../../component/ui/button/Button";
+import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
 import DeleteStudentModal from "./deleteStudentModal";
 import ReviewStudentModal from "./reveiwStudentmodal";
 import { getAuth } from "../../store/slice/auth.slice";
@@ -59,15 +61,7 @@ const STATUS = {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }) {
-  const s = STATUS[status] || STATUS.Inactive;
-  return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:s.bg, border:`1px solid ${s.border}`, color:s.color, fontSize:12, fontWeight:700, fontFamily:font.body, letterSpacing:"0.4px" }}>
-      <span style={{ width:7, height:7, borderRadius:"50%", background:s.dot, display:"inline-block" }} />
-      {status}
-    </span>
-  );
-}
+void STATUS;
 
 function SectionCard({ title, icon, children, noPad }) {
   return (
@@ -151,23 +145,16 @@ function PhotoAvatar({ docs }) {
 }
 
 function ActionBtn({ label, onClick, variant = "default", icon, disabled }) {
-  const styles = {
-    default: { bg:C.white, color:C.navy, border:`1.5px solid ${C.border}` },
-    primary: { bg:C.navy,  color:C.white, border:"none" },
-    success: { bg:C.green, color:C.white, border:"none" },
-    danger:  { bg:C.red,   color:C.white, border:"none" },
-  };
-  const s = styles[variant] || styles.default;
   return (
-    <button
+    <Button
+      variant={variant === "default" ? "outlined" : variant === "success" ? "success" : variant === "danger" ? "danger" : "primary"}
       onClick={onClick}
       disabled={disabled}
-      style={{ height:40, padding:"0 16px", background:s.bg, color:s.color, border:s.border, borderRadius:9, fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:font.body, display:"flex", alignItems:"center", gap:6, transition:"all 0.18s", flexShrink:0, opacity:disabled?0.6:1 }}
-      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.opacity="0.85"; e.currentTarget.style.transform="translateY(-1px)"; }}}
-      onMouseLeave={(e) => { e.currentTarget.style.opacity = disabled ? "0.6" : "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+      size="medium"
+      style={{ height: 40, padding: "0 16px", fontFamily: font.body, flexShrink: 0 }}
     >
       {icon && <span>{icon}</span>}{label}
-    </button>
+    </Button>
   );
 }
 
@@ -475,22 +462,12 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
 
       {/* ── Modals ── */}
       {showEditModal && (
-        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(10,20,44,0.55)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div style={{ background:C.white, borderRadius:20, width:"100%", maxWidth:700, maxHeight:"92vh", overflow:"hidden", boxShadow:"0 24px 64px rgba(15,32,68,0.18)", display:"flex", flexDirection:"column" }}>
-            <div style={{ padding:"16px 20px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center", background:C.cream, flexShrink:0 }}>
-              <h5 style={{ margin:0, fontSize:16, fontWeight:700, color:C.navy, fontFamily:font.body }}>Edit Student</h5>
-              <button onClick={() => setShowEditModal(false)} style={{ width:32, height:32, borderRadius:"50%", background:C.white, border:`1px solid ${C.border}`, fontSize:18, color:C.slate, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
-            </div>
-            <div style={{ overflowY:"auto", flex:1 }}>
-              <StudentRegistrationForm
-                student={student}
-                studentId={student?._id || null}
-                onSaved={async () => { await fetchStudent?.(); setShowEditModal(false); }}
-                onClose={() => setShowEditModal(false)}
-              />
-            </div>
-          </div>
-        </div>
+        <StudentRegistrationForm
+          student={student}
+          studentId={student?._id || null}
+          onSaved={async () => { await fetchStudent?.(); setShowEditModal(false); }}
+          onClose={() => setShowEditModal(false)}
+        />
       )}
 
       {showDeleteModal && (

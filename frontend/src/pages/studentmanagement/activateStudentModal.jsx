@@ -1,4 +1,6 @@
 import { useState } from "react";
+import BasicModal from "../../component/ui/modal/basicModal";
+import Button from "../../component/ui/button/Button";
 import Loader from "../../component/ui/loader/Loader";
 
 const ActivateStudentModal = ({
@@ -8,16 +10,16 @@ const ActivateStudentModal = ({
   onReject,
   loading: externalLoading = false,
 }) => {
-  const [tab, setTab]                         = useState("activate");
+  const [tab, setTab] = useState("activate");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [loading, setLoading]                 = useState(false);
-  const [error, setError]                     = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   if (!student) return null;
 
   const fullName = `${student.firstName || ""} ${student.lastName || ""}`.trim();
+  const busy = loading || externalLoading;
 
-  // ✅ ACTIVATE
   const handleActivate = async () => {
     if (!student?._id) {
       setError("Student ID missing");
@@ -28,11 +30,8 @@ const ActivateStudentModal = ({
     setLoading(true);
 
     try {
-      await onActivate?.({
-        id: student._id,
-        payload: {},
-      });
-      onClose();
+      await onActivate?.({ id: student._id, payload: {} });
+      onClose?.();
     } catch (e) {
       setError(e?.response?.data?.message || e.message || "Activation failed");
     } finally {
@@ -40,7 +39,6 @@ const ActivateStudentModal = ({
     }
   };
 
-  // ✅ REJECT
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
       setError("Rejection reason is required");
@@ -51,11 +49,8 @@ const ActivateStudentModal = ({
     setError("");
 
     try {
-      await onReject?.({
-        id: student._id,
-        payload: { rejectionReason },
-      });
-      onClose();
+      await onReject?.({ id: student._id, payload: { rejectionReason } });
+      onClose?.();
     } catch (e) {
       setError(e?.response?.data?.message || e.message || "Rejection failed");
     } finally {
@@ -63,258 +58,112 @@ const ActivateStudentModal = ({
     }
   };
 
-  return (
-    <div style={backdrop}>
-      <div style={modal}>
-
-        {/* Header */}
-        <div style={header}>
-          <div>
-            <h3 style={{ margin: 0 }}>Review Student</h3>
-            <p style={sub}>Verify details before approval</p>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={loading || externalLoading}
-            style={closeBtn}
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: 20 }}>
-
-          {/* Student Info */}
-          <div style={card}>
-            <h4 style={{ margin: 0 }}>{fullName || "—"}</h4>
-            <p style={{ margin: "4px 0", color: "#666" }}>
-              {student.gender || "—"} • {student.category || "—"}
-            </p>
-
-            <div style={{ marginTop: 10, fontSize: 14 }}>
-              <div><b>Email:</b> {student.email || "—"}</div>
-              <div><b>Phone:</b> {student.phone || "—"}</div>
-              <div>
-                <b>Location:</b>{" "}
-                {[student.address?.city, student.address?.state].filter(Boolean).join(", ") || "—"}
-              </div>
-              <div>
-                <b>10th:</b> {student.tenthPercentage ? `${student.tenthPercentage}%` : "—"}
-                &nbsp;&nbsp;
-                <b>12th:</b> {student.twelfthPercentage ? `${student.twelfthPercentage}%` : "—"}
-              </div>
-              {student.entranceExamName && (
-                <div>
-                  <b>{student.entranceExamName}:</b>{" "}
-                  {student.entranceExamScore || "—"}
-                  {student.entranceExamRank ? ` · AIR #${student.entranceExamRank}` : ""}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div style={tabs}>
-            <button
-              style={tabBtn(tab === "activate", "#16a34a")}
-              onClick={() => setTab("activate")}
-            >
-              Activate
-            </button>
-            <button
-              style={tabBtn(tab === "reject", "#dc2626")}
-              onClick={() => setTab("reject")}
-            >
-              Reject
-            </button>
-          </div>
-
-          {/* Content */}
-          {tab === "activate" ? (
-            <div style={successBox}>
-              This will activate the student and send login credentials to:
-              <br />
-              <b>{student.email}</b>
-            </div>
-          ) : (
-            <textarea
-              placeholder="Enter rejection reason..."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              style={textarea}
-            />
-          )}
-
-          {/* Error */}
-          {error && <p style={errorStyle}>{error}</p>}
-        </div>
-
-        {/* Footer */}
-        <div style={footer}>
-          <button onClick={onClose} style={cancelBtn}>
-            Cancel
-          </button>
-
-          {tab === "activate" ? (
-            <button
-              onClick={handleActivate}
-              disabled={loading || externalLoading}
-              style={greenBtn}
-            >
-              {loading || externalLoading ? <Loader size={16} color="inherit" /> : null}
-              {loading || externalLoading ? "Activating..." : "Activate"}
-            </button>
-          ) : (
-            <button
-              onClick={handleReject}
-              disabled={loading || externalLoading}
-              style={redBtn}
-            >
-              {loading || externalLoading ? <Loader size={16} color="inherit" /> : null}
-              {loading || externalLoading ? "Rejecting..." : "Reject"}
-            </button>
-          )}
-        </div>
-      </div>
+  const actions = (
+    <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
+      <Button variant="outlined" onClick={onClose} disabled={busy}>
+        Cancel
+      </Button>
+      {tab === "activate" ? (
+        <Button variant="success" onClick={handleActivate} disabled={busy}>
+          {busy ? <Loader size={16} color="inherit" /> : null}
+          {busy ? "Activating…" : "Activate"}
+        </Button>
+      ) : (
+        <Button
+          variant="danger"
+          onClick={handleReject}
+          disabled={busy}
+          style={{ background: "#dc2626", borderColor: "#dc2626", color: "#fff" }}
+        >
+          {busy ? <Loader size={16} color="inherit" /> : null}
+          {busy ? "Rejecting…" : "Reject"}
+        </Button>
+      )}
     </div>
+  );
+
+  return (
+    <BasicModal open title="Activate Student" onClose={onClose} maxWidth="md" actions={actions}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+        <div
+          style={{
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 12,
+            padding: 16,
+          }}
+        >
+          <h4 style={{ margin: 0, color: "#0f2044" }}>{fullName || "—"}</h4>
+          <p style={{ margin: "4px 0", color: "#64748b" }}>
+            {student.gender || "—"} • {student.category || "—"}
+          </p>
+
+          <div style={{ marginTop: 10, fontSize: 14, display: "grid", gap: 6 }}>
+            <div><b>Email:</b> {student.email || "—"}</div>
+            <div><b>Phone:</b> {student.phone || "—"}</div>
+            <div>
+              <b>Location:</b>{" "}
+              {[student.address?.city, student.address?.state].filter(Boolean).join(", ") || "—"}
+            </div>
+            <div>
+              <b>10th:</b> {student.tenthPercentage ? `${student.tenthPercentage}%` : "—"}
+              &nbsp;&nbsp;
+              <b>12th:</b> {student.twelfthPercentage ? `${student.twelfthPercentage}%` : "—"}
+            </div>
+            {student.entranceExamName && (
+              <div>
+                <b>{student.entranceExamName}:</b> {student.entranceExamScore || "—"}
+                {student.entranceExamRank ? ` · AIR #${student.entranceExamRank}` : ""}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Button
+            variant={tab === "activate" ? "success" : "outlined"}
+            onClick={() => setTab("activate")}
+          >
+            Activate
+          </Button>
+          <Button
+            variant={tab === "reject" ? "danger" : "outlined"}
+            onClick={() => setTab("reject")}
+            style={tab === "reject" ? { background: "#dc2626", borderColor: "#dc2626", color: "#fff" } : undefined}
+          >
+            Reject
+          </Button>
+        </div>
+
+        {tab === "activate" ? (
+          <div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", padding: 12, borderRadius: 8, fontSize: 14 }}>
+            This will activate the student and send login credentials to:
+            <br />
+            <b>{student.email}</b>
+          </div>
+        ) : (
+          <textarea
+            placeholder="Enter rejection reason..."
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 10,
+              borderRadius: 8,
+              border: "1px solid #dbe3ee",
+              minHeight: 90,
+              resize: "vertical",
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: 13,
+              outline: "none",
+            }}
+          />
+        )}
+
+        {error ? <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{error}</p> : null}
+      </div>
+    </BasicModal>
   );
 };
 
 export default ActivateStudentModal;
-
-
-// 🎨 STYLES
-
-const backdrop = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.6)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 9999,
-};
-
-const modal = {
-  width: "100%",
-  maxWidth: 520,
-  background: "#fff",
-  borderRadius: 14,
-  boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-  overflow: "hidden",
-};
-
-const header = {
-  padding: "16px 20px",
-  borderBottom: "1px solid #eee",
-  display: "flex",
-  justifyContent: "space-between",
-};
-
-const sub = {
-  margin: 0,
-  fontSize: 12,
-  color: "#777",
-};
-
-const closeBtn = {
-  border: "none",
-  background: "#f3f4f6",
-  borderRadius: "50%",
-  width: 30,
-  height: 30,
-  cursor: "pointer",
-  fontSize: 18,
-};
-
-const card = {
-  background: "#f9fafb",
-  padding: 14,
-  borderRadius: 10,
-  marginBottom: 16,
-};
-
-const tabs = {
-  display: "flex",
-  gap: 10,
-  marginBottom: 16,
-};
-
-const tabBtn = (active, color) => ({
-  flex: 1,
-  padding: "10px",
-  borderRadius: 8,
-  border: active ? "none" : "1px solid #ddd",
-  background: active ? color : "#fff",
-  color: active ? "#fff" : "#333",
-  fontWeight: 600,
-  cursor: "pointer",
-});
-
-const successBox = {
-  background: "#ecfdf5",
-  border: "1px solid #bbf7d0",
-  padding: 12,
-  borderRadius: 8,
-  fontSize: 14,
-};
-
-const textarea = {
-  width: "100%",
-  padding: 10,
-  borderRadius: 8,
-  border: "1px solid #ddd",
-  minHeight: 90,
-  resize: "vertical",
-  fontFamily: "system-ui",
-  fontSize: 13,
-};
-
-const footer = {
-  padding: 16,
-  borderTop: "1px solid #eee",
-  display: "flex",
-  justifyContent: "flex-end",
-  gap: 10,
-};
-
-const cancelBtn = {
-  padding: "8px 14px",
-  borderRadius: 6,
-  border: "1px solid #ccc",
-  background: "#fff",
-  cursor: "pointer",
-};
-
-const greenBtn = {
-  padding: "8px 16px",
-  borderRadius: 6,
-  border: "none",
-  background: "#16a34a",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-};
-
-const redBtn = {
-  padding: "8px 16px",
-  borderRadius: 6,
-  border: "none",
-  background: "#dc2626",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-};
-
-const errorStyle = {
-  color: "red",
-  marginTop: 10,
-  fontSize: 13,
-};

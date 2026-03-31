@@ -15,6 +15,8 @@ const BasicTable = ({
   emptyText   = "No records found",
   stickyHeader = true,
   isLoading   = false,
+  onRowClick,
+  tableStyle = {},
 }) => {
   const sortedRows = useMemo(() => {
     if (!rows.length) return rows;
@@ -49,7 +51,7 @@ const BasicTable = ({
 
   return (
     <div style={{ overflow: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Outfit', sans-serif" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Outfit', sans-serif", ...tableStyle }}>
         <thead style={{ position: stickyHeader ? "sticky" : "static", top: 0, zIndex: 1, background: "#f8fafc" }}>
           <tr>
             {columns.map(col => (
@@ -75,11 +77,15 @@ const BasicTable = ({
             <tr
               key={row?.id ?? rowIndex}
               style={{ borderBottom: "1px solid #f0f3f7" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#fafbfc")}
+              onClick={() => onRowClick?.(row)}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = onRowClick ? "#fafbfc" : "transparent";
+                e.currentTarget.style.cursor = onRowClick ? "pointer" : "default";
+              }}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             >
               {columns.map(col => {
-                const value = col.render ? col.render(row) : row[col.key];
+                const value = col.render ? col.render(row, rowIndex) : row[col.key];
                 return (
                   <td
                     key={col.key}

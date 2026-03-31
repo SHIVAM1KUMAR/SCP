@@ -1,4 +1,4 @@
-import BasicModal from "./BasicModal";
+import BasicModal from "./basicModal";
 import Button from "../button/Button";
 import Loader from "../loader/Loader";
 
@@ -14,6 +14,7 @@ const DeleteConfirmationModal = ({
   onClose,
   onConfirm,
   isLoading = false,
+  children,
 }) => {
   return (
     <BasicModal
@@ -60,6 +61,7 @@ const DeleteConfirmationModal = ({
           {description ?? "Are you sure you want to delete? This action cannot be undone."}
         </p>
       </div>
+      {children}
     </BasicModal>
   );
 };
