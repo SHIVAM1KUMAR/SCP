@@ -1,12 +1,12 @@
-import React, { useState } from "react"; // ✅ CHANGED (added useState)
-import Loader from "../../component/ui/loader/Loader";
+import React, { useState } from "react";
+import DeleteActionButton from "../../component/ui/modal/DeleteActionButton";
 
 const DeleteCollegeModal = ({
   show,
   onClose,
   onConfirm,
   college,
-  loading: externalLoading = false, // ✅ CHANGED (renamed)
+  loading: externalLoading = false, // kept for compatibility, modal uses local state
 }) => {
   const [loading, setLoading] = useState(false); // ✅ NEW
   const [error, setError] = useState(""); // ✅ NEW
@@ -40,7 +40,7 @@ const DeleteCollegeModal = ({
     }
   };
 
-  const isLoading = loading || externalLoading; // ✅ NEW (combine both)
+  const isLoading = loading;
 
   return (
     <div
@@ -151,27 +151,7 @@ const DeleteCollegeModal = ({
             Cancel
           </button>
 
-          <button
-            type="button"
-            onClick={handleDelete} // ✅ CHANGED
-            disabled={isLoading} // ✅ CHANGED
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              border: "none",
-              background: "#dc2626",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            {isLoading ? <Loader size={16} color="inherit" /> : null}
-            {isLoading ? "Deleting..." : "Delete"}
-          </button>
+          <DeleteActionButton loading={isLoading} onClick={handleDelete} />
         </div>
       </div>
     </div>

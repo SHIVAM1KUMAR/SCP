@@ -115,14 +115,14 @@ export function useStudents(studentId = null, toast = () => {}) {
       return true;
     } catch (err) {
       toast(err?.response?.data?.message || err?.message || "Failed to delete", "error");
-      return false;
+      throw err;
     } finally {
       setDeleting(null);
     }
   };
 
   const handleDelete = async (studentRecord) => {
-    if (!studentRecord?._id) return false;
+    if (!studentRecord?._id) throw new Error("Student ID is required");
     return deleteStudentAsync(studentRecord._id);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Loader from "../../component/ui/loader/Loader";
+import DeleteActionButton from "../../component/ui/modal/DeleteActionButton";
 
 const DeleteStudentModal = ({
   show,
@@ -146,27 +146,7 @@ const DeleteStudentModal = ({
             Cancel
           </button>
 
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isLoading}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              border: "none",
-              background: "#dc2626",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            {isLoading ? <Loader size={16} color="inherit" /> : null}
-            {isLoading ? "Deleting..." : "Delete"}
-          </button>
+          <DeleteActionButton loading={isLoading} onClick={handleDelete} />
         </div>
       </div>
     </div>

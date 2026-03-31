@@ -95,9 +95,10 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
   };
 
   const handleDeleteConfirm = async ({ id }) => {
-    await deleteStudent(id);
+    const result = await deleteStudent(id);
     setShowDeleteModal(false);
     setStudentToDelete(null);
+    return true;
   };
 
   const handleSaved = async (isEdit) => {

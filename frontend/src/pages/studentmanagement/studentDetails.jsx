@@ -129,9 +129,10 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const fullName = `${student.firstName || ""} ${student.lastName || ""}`.trim();
 
   const handleDeleteConfirm = async ({ id }) => {
-    await deleteStudentAsync(id);
+    const result = await deleteStudentAsync(id);
     setShowDeleteModal(false);
     navigate(listRoute);
+    return true;
   };
 
   return (
