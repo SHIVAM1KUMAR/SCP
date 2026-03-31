@@ -28,6 +28,7 @@ export default function BasicModal({
   actions,
   maxWidth  = "sm",
   fullWidth = true,
+  disableClose = false,
 }) {
   // Lock body scroll when open (replaces MUI disableScrollLock=false behaviour)
   useEffect(() => {
@@ -39,10 +40,10 @@ export default function BasicModal({
   // ESC key closes
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    const handler = (e) => { if (e.key === "Escape" && !disableClose) onClose(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open, onClose, disableClose]);
 
   if (!open) return null;
 
@@ -88,7 +89,7 @@ export default function BasicModal({
             padding:        "16px",
             overflow:       "hidden",
           }}
-          onClick={onClose}
+          onClick={disableClose ? undefined : onClose}
         >
         <div
           style={{ 
@@ -113,16 +114,22 @@ export default function BasicModal({
               <button
                 type="button"
                 onClick={onClose}
+                disabled={disableClose}
                 style={{
                   background: "#f8fafc", border: "1px solid #e2e8f0",
-                  cursor: "pointer", padding: "6px",
+                  cursor: disableClose ? "not-allowed" : "pointer", padding: "6px",
                   color: "#64748b", fontSize: 18,
                   lineHeight: 1, borderRadius: 8,
                   display: "flex", alignItems: "center",
+                  opacity: disableClose ? 0.6 : 1,
                   transition: "background 0.2s"
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
-                onMouseLeave={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseEnter={e => {
+                  if (!disableClose) e.currentTarget.style.background = "#f1f5f9";
+                }}
+                onMouseLeave={e => {
+                  if (!disableClose) e.currentTarget.style.background = "#f8fafc";
+                }}
                 aria-label="Close"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={18} height={18}>

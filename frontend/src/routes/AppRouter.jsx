@@ -12,7 +12,7 @@ import CollegeDetails from "../pages/collegemanagement/collegeDetails";
 //import StudentDashboard from "../pages/studentmanagement/StudentDashboard";
 import StudentManagement from "../pages/studentmanagement/StudentManagement";
 import StudentDetails from "../pages/studentmanagement/studentDetails";
-import Payments from "../pages/payments/Payments";
+import Payments from "../pages/paymentsmanagement/Payments";
 
 const ROLE_ROUTES = {
   SuperAdmin: [

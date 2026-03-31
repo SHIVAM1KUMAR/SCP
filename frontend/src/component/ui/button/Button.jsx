@@ -104,6 +104,7 @@ const Button = ({
   disabled = false,
   loading = false,
   fullWidth = false,
+  as = "button",
   onClick,
   children,
   className = "",
@@ -117,33 +118,29 @@ const Button = ({
   const sizeStyle = SIZE_STYLES[resolvedSize];
   const isIcon = resolvedSize === "icon" || resolvedVariant === "icon";
 
-  return (
-    <button
-      type={type}
-      className={className}
-      disabled={disabled || loading}
-      onClick={onClick}
-      style={{
-        ...variantStyle,
-        ...sizeStyle,
-        width: fullWidth ? "100%" : sizeStyle.width,
-        minWidth: isIcon ? 34 : undefined,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        cursor: disabled || loading ? "not-allowed" : "pointer",
-        textTransform: "none",
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 700,
-        lineHeight: 1,
-        transition: "transform .15s ease, opacity .15s ease, background-color .15s ease, box-shadow .15s ease",
-        opacity: disabled || loading ? 0.72 : 1,
-        whiteSpace: "nowrap",
-        ...style,
-      }}
-      {...props}
-    >
+  const sharedStyle = {
+    ...variantStyle,
+    ...sizeStyle,
+    width: fullWidth ? "100%" : sizeStyle.width,
+    minWidth: isIcon ? 34 : undefined,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    cursor: disabled || loading ? "not-allowed" : "pointer",
+    textTransform: "none",
+    fontFamily: "'Outfit', sans-serif",
+    fontWeight: 700,
+    lineHeight: 1,
+    transition: "transform .15s ease, opacity .15s ease, background-color .15s ease, box-shadow .15s ease",
+    opacity: disabled || loading ? 0.72 : 1,
+    whiteSpace: "nowrap",
+    textDecoration: "none",
+    ...style,
+  };
+
+  const content = (
+    <>
       {loading && (
         <span
           aria-hidden="true"
@@ -165,6 +162,33 @@ const Button = ({
           to { transform: rotate(360deg); }
         }
       `}</style>
+    </>
+  );
+
+  if (as === "a") {
+    return (
+      <a
+        className={className}
+        onClick={disabled || loading ? undefined : onClick}
+        aria-disabled={disabled || loading}
+        style={sharedStyle}
+        {...props}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type={type}
+      className={className}
+      disabled={disabled || loading}
+      onClick={onClick}
+      style={sharedStyle}
+      {...props}
+    >
+      {content}
     </button>
   );
 };
