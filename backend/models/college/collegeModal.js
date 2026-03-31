@@ -56,6 +56,11 @@ const collegeSchema = new mongoose.Schema({
     enum: ["Active", "Inactive", "Pending", "Rejected"]
   },
 
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -69,7 +69,7 @@ const attachDocumentViews = (obj) => {
 export const getColleges = async (req, res) => {
   try {
     const { search, status, page = 1, limit = 20 } = req.query;
-    const query = {};
+    const query = { isDeleted: { $ne: true } };
 
     if (search) {
       query.collegeName = { $regex: search, $options: "i" };
@@ -111,10 +111,11 @@ export const getColleges = async (req, res) => {
 
 export const getCollegeStats = async (req, res) => {
   try {
-    const total = await College.countDocuments();
-    const active = await College.countDocuments({ status: "Active" });
-    const pending = await College.countDocuments({ status: "Pending" });
-    const rejected = await College.countDocuments({ status: "Rejected" });
+    const baseQuery = { isDeleted: { $ne: true } };
+    const total = await College.countDocuments(baseQuery);
+    const active = await College.countDocuments({ ...baseQuery, status: "Active" });
+    const pending = await College.countDocuments({ ...baseQuery, status: "Pending" });
+    const rejected = await College.countDocuments({ ...baseQuery, status: "Rejected" });
 
     res.json({ success: true, data: { total, active, pending, rejected } });
   } catch (error) {
@@ -197,7 +198,7 @@ export const registerCollege = async (req, res) => {
     console.log("📁 FILES:", documents);
 
     // ✅ Check duplicate
-    const existing = await College.findOne({ collegeCode });
+    const existing = await College.findOne({ collegeCode, isDeleted: { $ne: true } });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -248,10 +249,10 @@ export const activateCollege = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const college = await College.findById(id);
-    if (!college) {
-      return res.status(404).json({ success: false, message: "College not found" });
-    }
+      const college = await College.findById(id);
+      if (!college || college.isDeleted) {
+        return res.status(404).json({ success: false, message: "College not found" });
+      }
 
     if (college.status === "Active") {
       return res.status(400).json({ success: false, message: "College already active" });
@@ -284,8 +285,8 @@ export const rejectCollege = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const college = await College.findByIdAndUpdate(
-      id,
+    const college = await College.findOneAndUpdate(
+      { _id: id, isDeleted: { $ne: true } },
       { status: "Rejected" },
       { new: true }
     );
@@ -305,7 +306,11 @@ export const deleteCollege = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const college = await College.findByIdAndDelete(id);
+    const college = await College.findOneAndUpdate(
+      { _id: id, isDeleted: { $ne: true } },
+      { isDeleted: true },
+      { new: true },
+    );
     if (!college) {
       return res.status(404).json({ success: false, message: "College not found" });
     }
@@ -322,8 +327,8 @@ export const toggleInterest = async (req, res) => {
   const { studentEmail } = req.body;
 
   try {
-    const student = await Student.findOne({ email: studentEmail });
-    if (!student) return res.status(404).json({ message: "Student not found" });
+      const student = await Student.findOne({ email: studentEmail, isDeleted: { $ne: true } });
+      if (!student) return res.status(404).json({ message: "Student not found" });
 
     if (!student.interestedColleges) {
       student.interestedColleges = [];
@@ -355,7 +360,7 @@ export const toggleInterest = async (req, res) => {
 
 export const getPayments = async (req, res) => {
   try {
-    const colleges = await College.find().sort({ createdAt: -1 });
+    const colleges = await College.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
 
     // ✅ format URLs
     const formatted = colleges.map((c) => {
@@ -382,7 +387,7 @@ export const verifyPayment = async (req, res) => {
     const { id } = req.params;
 
     const college = await College.findById(id);
-    if (!college) {
+    if (!college || college.isDeleted) {
       return res.status(404).json({ success: false, message: "College not found" });
     }
 
@@ -414,10 +419,10 @@ export const updateCollege = async (req, res) => {
   try {
     const { id } = req.params;
     const college = await College.findById(id);
-
-    if (!college) {
-      return res.status(404).json({ success: false, message: "College not found" });
-    }
+  
+      if (!college || college.isDeleted) {
+        return res.status(404).json({ success: false, message: "College not found" });
+      }
 
     let address = college.address || {};
     if (req.body.address) {
@@ -484,10 +489,10 @@ export const getSingleCollege = async (req, res) => {
     const { id } = req.params;
 
     const college = await College.findById(id);
-
-    if (!college) {
-      return res.status(404).json({
-        success: false,
+  
+      if (!college || college.isDeleted) {
+        return res.status(404).json({
+          success: false,
         message: "College not found",
       });
     }

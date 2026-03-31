@@ -142,7 +142,7 @@ export const superAdminLogin = async (req, res) => {
     }
 
     const student = await Student.findOne({ email: normalizedEmail });
-    if (student && student.status === "Active") {
+    if (student && !student.isDeleted && student.status === "Active") {
       const isMatch = await bcrypt.compare(password, student.password);
       if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -151,7 +151,7 @@ export const superAdminLogin = async (req, res) => {
     }
 
     const college = await College.findOne({ email: normalizedEmail });
-    if (college && college.status === "Active") {
+    if (college && !college.isDeleted && college.status === "Active") {
       const isMatch = await bcrypt.compare(password, college.password);
       if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -191,6 +191,9 @@ export const changePassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "Account not found" });
     }
+    if (user.isDeleted) {
+      return res.status(404).json({ message: "Account not found" });
+    }
 
     if (!user.password) {
       return res.status(400).json({ message: "Password change is not available for this account" });
@@ -227,6 +230,9 @@ export const getMyProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
+    if (user.isDeleted) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
 
     return res.json({ success: true, data: serializeSuperAdmin(user) });
   } catch (error) {
@@ -252,6 +258,9 @@ export const updateMyProfile = async (req, res) => {
       user = seeded ? await Model.findOne({ email: seeded.email }) : null;
     }
     if (!user) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
+    if (user.isDeleted) {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
 
@@ -309,6 +318,9 @@ export const updateMyProfilePicture = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
+    if (user.isDeleted) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
 
     user.imageUrl = `uploads/${req.file.filename}`;
     await user.save();
@@ -343,6 +355,9 @@ export const setPrimaryAddress = async (req, res) => {
       user = seeded ? await Model.findOne({ email: seeded.email }) : null;
     }
     if (!user) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
+    if (user.isDeleted) {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
 

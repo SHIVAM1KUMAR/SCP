@@ -81,6 +81,10 @@ const studentSchema = new mongoose.Schema(
       default: "Pending",
       enum: ["Pending", "Approved", "Rejected", "Inactive", "Active"],
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     role: { type: String, default: "student" },
   },
   {

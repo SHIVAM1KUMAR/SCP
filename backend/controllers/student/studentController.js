@@ -262,7 +262,7 @@ const normalizeFollowUpStatus = (value) => {
 export const getStudents = async (req, res) => {
   try {
     const { search } = req.query;
-    const query = {};
+    const query = { isDeleted: { $ne: true } };
 
     if (search) {
       const regex = { $regex: search, $options: "i" };
@@ -289,7 +289,7 @@ export const getStudentById = async (req, res) => {
     const { id } = req.params;
     const student = await Student.findById(id).select("-password");
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
@@ -308,13 +308,13 @@ export const addStudent = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    const existing = await Student.findOne({ email: payload.email });
+    const existing = await Student.findOne({ email: payload.email, isDeleted: { $ne: true } });
     if (existing) {
       return res.status(400).json({ success: false, message: "Student with this email already exists" });
     }
 
     if (payload.aadharNumber) {
-      const existingAadhar = await Student.findOne({ aadharNumber: payload.aadharNumber });
+      const existingAadhar = await Student.findOne({ aadharNumber: payload.aadharNumber, isDeleted: { $ne: true } });
       if (existingAadhar) {
         return res.status(400).json({ success: false, message: "Student with this Aadhar number already exists" });
       }
@@ -349,7 +349,7 @@ export const updateStudent = async (req, res) => {
     const { id } = req.params;
     const student = await Student.findById(id);
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
@@ -362,6 +362,7 @@ export const updateStudent = async (req, res) => {
     const existingEmail = await Student.findOne({
       email: sanitizeEmail(payload.email),
       _id: { $ne: id },
+      isDeleted: { $ne: true },
     });
     if (existingEmail) {
       return res.status(400).json({ success: false, message: "Student with this email already exists" });
@@ -371,6 +372,7 @@ export const updateStudent = async (req, res) => {
       const existingAadhar = await Student.findOne({
         aadharNumber: payload.aadharNumber,
         _id: { $ne: id },
+        isDeleted: { $ne: true },
       });
       if (existingAadhar) {
         return res.status(400).json({ success: false, message: "Student with this Aadhar number already exists" });
@@ -405,9 +407,13 @@ export const updateStudent = async (req, res) => {
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    const student = await Student.findByIdAndDelete(id);
+    const student = await Student.findOneAndUpdate(
+      { _id: id, isDeleted: { $ne: true } },
+      { isDeleted: true },
+      { new: true },
+    );
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
@@ -423,7 +429,7 @@ export const approveStudent = async (req, res) => {
     const { id } = req.params;
     const student = await Student.findById(id);
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
@@ -446,7 +452,7 @@ export const rejectStudent = async (req, res) => {
     const { id } = req.params;
     const student = await Student.findById(id);
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
@@ -469,7 +475,7 @@ export const activateStudent = async (req, res) => {
     const { id } = req.params;
     const student = await Student.findById(id);
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
@@ -506,7 +512,7 @@ export const updateStudentFollowUpStatus = async (req, res) => {
     const { id } = req.params;
     const student = await Student.findById(id);
 
-    if (!student) {
+    if (!student || student.isDeleted) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
