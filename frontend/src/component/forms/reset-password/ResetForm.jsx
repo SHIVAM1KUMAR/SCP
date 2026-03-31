@@ -1,3 +1,6 @@
+import TextField from "../../ui/textfeild/textFeild";
+import Button from "../../ui/button/Button";
+
 export default function ResetForm() {
     return (
       <div style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -9,37 +12,24 @@ export default function ResetForm() {
         </p>
   
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>
-            New Password
-          </label>
-          <input
+          <TextField
+            label="New Password"
             type="password"
             placeholder="••••••••"
-            style={{ width: "100%", height: 42, padding: "0 14px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none" }}
-            onFocus={e => (e.target.style.borderColor = "#1a6fa8")}
-            onBlur={e  => (e.target.style.borderColor = "#e2e8f0")}
           />
         </div>
   
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>
-            Confirm Password
-          </label>
-          <input
+          <TextField
+            label="Confirm Password"
             type="password"
             placeholder="••••••••"
-            style={{ width: "100%", height: 42, padding: "0 14px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none" }}
-            onFocus={e => (e.target.style.borderColor = "#1a6fa8")}
-            onBlur={e  => (e.target.style.borderColor = "#e2e8f0")}
           />
         </div>
   
-        <button
-          type="button"
-          style={{ width: "100%", height: 44, background: "linear-gradient(135deg, #1a6fa8, #0d4f82)", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: "'Outfit', sans-serif", cursor: "pointer" }}
-        >
+        <Button type="button" fullWidth variant="primary">
           Reset Password
-        </button>
+        </Button>
       </div>
     );
   }

@@ -1,19 +1,8 @@
 import { useState } from "react";
 import axiosInstance from "../../../api/axiosInstance";
 import { useToast } from "../../../context/ToastContext";
-
-const inputStyle = {
-  width: "100%",
-  height: 44,
-  padding: "0 14px",
-  borderRadius: 10,
-  border: "1.5px solid #d9e2ef",
-  background: "#fff",
-  color: "#0f172a",
-  fontSize: 14,
-  outline: "none",
-  transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-};
+import TextField from "../../ui/textfeild/textFeild";
+import Button from "../../ui/button/Button";
 
 export default function ChangePasswordForm() {
   const toast = useToast();
@@ -98,101 +87,35 @@ export default function ChangePasswordForm() {
 
       <div style={{ display: "grid", gap: 16 }}>
         <div>
-          <label
-            htmlFor="oldPassword"
-            style={{
-              display: "block",
-              marginBottom: 6,
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#475569",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Old Password
-          </label>
-          <input
-            id="oldPassword"
+          <TextField
+            name="oldPassword"
+            label="Old Password"
             type="password"
             value={form.oldPassword}
             onChange={handleChange("oldPassword")}
             placeholder="Enter current password"
-            style={inputStyle}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#1a6fa8";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26, 111, 168, 0.12)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#d9e2ef";
-              e.currentTarget.style.boxShadow = "none";
-            }}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="newPassword"
-            style={{
-              display: "block",
-              marginBottom: 6,
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#475569",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            New Password
-          </label>
-          <input
-            id="newPassword"
+          <TextField
+            name="newPassword"
+            label="New Password"
             type="password"
             value={form.newPassword}
             onChange={handleChange("newPassword")}
             placeholder="Create a new password"
-            style={inputStyle}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#1a6fa8";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26, 111, 168, 0.12)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#d9e2ef";
-              e.currentTarget.style.boxShadow = "none";
-            }}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="confirmNewPassword"
-            style={{
-              display: "block",
-              marginBottom: 6,
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#475569",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Confirm New Password
-          </label>
-          <input
-            id="confirmNewPassword"
+          <TextField
+            name="confirmNewPassword"
+            label="Confirm New Password"
             type="password"
             value={form.confirmNewPassword}
             onChange={handleChange("confirmNewPassword")}
             placeholder="Re-enter the new password"
-            style={inputStyle}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#1a6fa8";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26, 111, 168, 0.12)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#d9e2ef";
-              e.currentTarget.style.boxShadow = "none";
-            }}
           />
         </div>
       </div>
@@ -204,27 +127,9 @@ export default function ChangePasswordForm() {
           justifyContent: "flex-end",
         }}
       >
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{
-            height: 44,
-            padding: "0 18px",
-            border: "none",
-            borderRadius: 10,
-            background: isSubmitting
-              ? "linear-gradient(135deg, #7aaed0, #5d8eb0)"
-              : "linear-gradient(135deg, #1a6fa8, #0d4f82)",
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: isSubmitting ? "not-allowed" : "pointer",
-            minWidth: 160,
-            boxShadow: "0 10px 24px rgba(26, 111, 168, 0.22)",
-          }}
-        >
+        <Button type="submit" disabled={isSubmitting} loading={isSubmitting} variant="primary" style={{ minWidth: 160 }}>
           {isSubmitting ? "Updating..." : "Update Password"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import TextField from "../../component/ui/textfeild/textFeild";
+import Button from "../../component/ui/button/Button";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
@@ -357,8 +359,8 @@ export default function Login() {
 
             <form onSubmit={handleSubmit}>
               <div className="field">
-                <label>Email address</label>
-                <input
+                <TextField
+                  label="Email address"
                   type="email"
                   placeholder="you@example.com"
                   value={email}
@@ -368,19 +370,19 @@ export default function Login() {
                 />
               </div>
               <div className="field">
-                <label>Password</label>
-                <input
+                <TextField
+                  label="Password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={password}
                   autoComplete="current-password"
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
-              <button className="submit-btn" disabled={loading}>
-                {loading ? "Signing in…" : "Sign in"}
-              </button>
+              <Button type="submit" fullWidth loading={loading} variant="primary">
+                {loading ? "Signing in..." : "Sign in"}
+              </Button>
             </form>
 
             <div className="login-footer">
