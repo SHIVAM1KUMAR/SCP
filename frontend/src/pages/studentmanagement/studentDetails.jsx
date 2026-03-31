@@ -200,7 +200,6 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
               {showProfileActions && (
                 <div className="sd-actions">
                   <ActionBtn label="Edit" variant="primary" icon="✏" onClick={() => setShowEditModal(true)} />
-                  <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} disabled={isDeletingStudent} />
                 </div>
               )}
             </div>

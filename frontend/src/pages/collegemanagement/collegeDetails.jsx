@@ -334,12 +334,11 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
                     <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={()=>setShowDeleteModal(true)} disabled={isDeletingCollege} />
                   </>
                 )}
-                {showProfileActions && (
-                  <>
-                    <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={()=>setShowEditModal(true)} />
-                    <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={()=>setShowDeleteModal(true)} disabled={isDeletingCollege} />
-                  </>
-                )}
+              {showProfileActions && (
+                <>
+                  <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={()=>setShowEditModal(true)} />
+                </>
+              )}
               </div>
             </div>
 
