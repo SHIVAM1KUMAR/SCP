@@ -15,7 +15,7 @@ export default function Search({
     };
   
     return (
-      <div style={{ width, position: "relative", ...style }}>
+      <div style={{ width, position: "relative", boxSizing: "border-box", minWidth: 0, ...style }}>
         {/* Search icon */}
         <svg
           style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
@@ -35,6 +35,7 @@ export default function Search({
             height: 36,
             paddingLeft: 32,
             paddingRight: 12,
+            boxSizing: "border-box",
             border: "1.5px solid #e2e8f0",
             borderRadius: 8,
             fontSize: 13,

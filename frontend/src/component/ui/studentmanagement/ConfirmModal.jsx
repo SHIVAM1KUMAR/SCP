@@ -1,3 +1,5 @@
+import Button from "../button/Button";
+
 export function ConfirmModal({ student, onConfirm, onCancel }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -12,8 +14,12 @@ export function ConfirmModal({ student, onConfirm, onCancel }) {
           Are you sure you want to delete <strong>{student?.studentName}</strong>? This cannot be undone.
         </p>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 40, border: "1.5px solid #e2e8f0", borderRadius: 8, background: "#fff", color: "#374151", fontSize: 13.5, fontWeight: 500, cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ flex: 1, height: 40, border: "none", borderRadius: 8, background: "#e53e3e", color: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>Delete</button>
+          <Button variant="outlined" onClick={onCancel} fullWidth>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onConfirm} fullWidth>
+            Delete
+          </Button>
         </div>
       </div>
     </div>

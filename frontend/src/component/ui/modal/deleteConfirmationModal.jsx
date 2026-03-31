@@ -1,6 +1,5 @@
 import BasicModal from "./basicModal";
 import Button from "../button/Button";
-import Loader from "../loader/Loader";
 
 // ─── DeleteConfirmationModal ──────────────────────────────────────────────────
 // AmniCare: BasicModal + color="error" Button + Loader
@@ -22,20 +21,20 @@ const DeleteConfirmationModal = ({
       title={title}
       onClose={onClose}
       actions={
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 justify-content-end flex-wrap">
           <Button variant="outlined" onClick={onClose}>
             Cancel
           </Button>
-          <button
+          <Button
             type="button"
-            className="btn btn-danger d-flex align-items-center gap-2"
+            variant="danger"
             onClick={onConfirm}
             disabled={isLoading}
+            loading={isLoading}
             style={{ fontFamily: "'Outfit', sans-serif", fontSize: 14, borderRadius: 8 }}
           >
-            {isLoading && <Loader size={18} color="inherit" />}
             Delete
-          </button>
+          </Button>
         </div>
       }
     >

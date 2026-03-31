@@ -213,7 +213,7 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", width: "100%", justifyContent: "flex-end" }}>
             <Search
               value={search}
               onChange={(value) => {
@@ -221,10 +221,11 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
                 setPage(1);
               }}
               placeholder="Search student…"
-              width="220px"
+              width="320px"
+              style={{ flex: "0 1 320px", minWidth: 240, maxWidth: 360 }}
             />
             {canManageStudents && (
-              <Button onClick={handleAdd} variant="primary">
+              <Button onClick={handleAdd} variant="primary" style={{ flexShrink: 0 }}>
                 + Add Student
               </Button>
             )}
