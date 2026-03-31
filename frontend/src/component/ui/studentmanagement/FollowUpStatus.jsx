@@ -29,6 +29,15 @@ const FOLLOW_UP_STATUS_META = {
   },
 };
 
+const FOLLOW_UP_STATUS_VIEW_LABELS = {
+  student: {
+    Counseled: "Counseling Completed",
+  },
+  college: {
+    Counseled: "Counseled",
+  },
+};
+
 export const FOLLOW_UP_STATUS_OPTIONS = [
   "Unvisited",
   "Visited",
@@ -50,11 +59,36 @@ export const normalizeFollowUpStatus = (value) => {
   return match || "Unvisited";
 };
 
+export const buildFollowUpUpdateKey = (studentId, collegeId = null) =>
+  `${studentId || "student"}:${collegeId || "global"}`;
+
+export const getFollowUpStatusForCollege = (student, collegeId = null, scope = "student") => {
+  if (!student) return "Unvisited";
+
+  if (collegeId) {
+    const statuses = scope === "college"
+      ? student.collegeFollowUpStatuses
+      : student.studentFollowUpStatuses;
+    const rawStatus = statuses instanceof Map
+      ? statuses.get(String(collegeId))
+      : statuses?.[String(collegeId)];
+
+    if (rawStatus) {
+      return normalizeFollowUpStatus(rawStatus);
+    }
+  }
+
+  return "Unvisited";
+};
+
 function getFollowUpMeta(status) {
   return FOLLOW_UP_STATUS_META[status] || FOLLOW_UP_STATUS_META.default;
 }
 
-export function FollowUpStatusBadge({ status }) {
+const getFollowUpDisplayLabel = (status, view = "college") =>
+  FOLLOW_UP_STATUS_VIEW_LABELS[view]?.[status] || getFollowUpMeta(status).label;
+
+export function FollowUpStatusBadge({ status, view = "college" }) {
   const normalized = normalizeFollowUpStatus(status);
   const meta = getFollowUpMeta(normalized);
 
@@ -73,7 +107,7 @@ export function FollowUpStatusBadge({ status }) {
         background: meta.bg,
         whiteSpace: "nowrap",
       }}
-    >
+      >
       <span
         style={{
           width: 7,
@@ -83,7 +117,7 @@ export function FollowUpStatusBadge({ status }) {
           display: "inline-block",
         }}
       />
-      {meta.label}
+      {getFollowUpDisplayLabel(normalized, view)}
     </span>
   );
 }
@@ -93,6 +127,7 @@ export function FollowUpStatusSelect({
   onChange,
   disabled = false,
   loading = false,
+  view = "college",
 }) {
   const normalized = normalizeFollowUpStatus(value);
   const meta = getFollowUpMeta(normalized);
@@ -129,7 +164,7 @@ export function FollowUpStatusSelect({
       >
         {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {getFollowUpDisplayLabel(option, view)}
           </option>
         ))}
       </select>

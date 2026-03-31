@@ -23,12 +23,7 @@ const ALL_DOCUMENT_KEYS = [
 
 const LEGACY_STATUS_DEFAULT = "Inactive";
 const REGISTRATION_STATUS_DEFAULT = "Pending";
-const FOLLOW_UP_STATUS_DEFAULT = "Unvisited";
 const FOLLOW_UP_STATUS_VALUES = ["Unvisited", "Visited", "Counseled"];
-const LEGACY_FOLLOW_UP_STATUS_MAP = {
-  unseen: "Unvisited",
-  "not visited": "Unvisited",
-};
 
 const toText = (value, fallback = "") => {
   if (value === undefined || value === null) return fallback;
@@ -146,6 +141,14 @@ const attachStudentViews = (student) => {
   delete obj.password;
   delete obj.__v;
   const { publicDocuments, documentFiles } = buildDocumentViews(obj.documents || {});
+  const collegeFollowUpStatuses =
+    obj.collegeFollowUpStatuses instanceof Map
+      ? Object.fromEntries(obj.collegeFollowUpStatuses.entries())
+      : { ...(obj.collegeFollowUpStatuses || {}) };
+  const studentFollowUpStatuses =
+    obj.studentFollowUpStatuses instanceof Map
+      ? Object.fromEntries(obj.studentFollowUpStatuses.entries())
+      : { ...(obj.studentFollowUpStatuses || {}) };
 
   return {
     ...obj,
@@ -153,6 +156,8 @@ const attachStudentViews = (student) => {
     fullName: [obj.firstName, obj.lastName].filter(Boolean).join(" ").trim(),
     documents: publicDocuments,
     documentFiles,
+    collegeFollowUpStatuses,
+    studentFollowUpStatuses,
   };
 };
 
@@ -198,9 +203,6 @@ const buildStudentPayload = (req, existingStudent = null) => {
 
   const statusFromBody = toOptionalText(body.status || existingStudent?.status);
   const status = statusFromBody || (isDetailed ? REGISTRATION_STATUS_DEFAULT : LEGACY_STATUS_DEFAULT);
-  const followUpStatusFromBody = normalizeFollowUpStatus(body.followUpStatus || existingStudent?.followUpStatus);
-  const followUpStatus = followUpStatusFromBody || existingStudent?.followUpStatus || FOLLOW_UP_STATUS_DEFAULT;
-
   return {
     firstName,
     lastName,
@@ -235,7 +237,6 @@ const buildStudentPayload = (req, existingStudent = null) => {
     otherExamDetails: toOptionalText(body.otherExamDetails || existingStudent?.otherExamDetails),
     documents,
     status,
-    followUpStatus,
     isDetailed,
   };
 };
@@ -250,9 +251,6 @@ const sanitizeEmail = (value) => toText(value).toLowerCase();
 const normalizeFollowUpStatus = (value) => {
   const status = toOptionalText(value);
   if (!status) return "";
-
-  const legacyMatch = LEGACY_FOLLOW_UP_STATUS_MAP[status.toLowerCase()];
-  if (legacyMatch) return legacyMatch;
 
   const matched = FOLLOW_UP_STATUS_VALUES.find(
     (item) => item.toLowerCase() === status.toLowerCase()
@@ -513,6 +511,8 @@ export const updateStudentFollowUpStatus = async (req, res) => {
     }
 
     const nextStatus = normalizeFollowUpStatus(req.body?.followUpStatus);
+    const collegeId = toOptionalText(req.body?.collegeId);
+    const scope = toOptionalText(req.body?.scope).toLowerCase();
 
     if (!nextStatus) {
       return res.status(400).json({
@@ -521,7 +521,23 @@ export const updateStudentFollowUpStatus = async (req, res) => {
       });
     }
 
-    student.followUpStatus = nextStatus;
+    if (!collegeId) {
+      return res.status(400).json({
+        success: false,
+        message: "College ID is required",
+      });
+    }
+
+    const targetField = scope === "college"
+      ? "collegeFollowUpStatuses"
+      : "studentFollowUpStatuses";
+    const existingStatuses =
+      student[targetField] instanceof Map
+        ? student[targetField]
+        : new Map(Object.entries(student[targetField] || {}));
+    existingStatuses.set(collegeId, nextStatus);
+    student[targetField] = existingStatuses;
+
     await student.save();
 
     res.json({

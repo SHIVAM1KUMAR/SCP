@@ -66,15 +66,20 @@ const studentSchema = new mongoose.Schema(
 
     password: { type: String, default: "" },
     interestedColleges: [{ type: mongoose.Schema.Types.ObjectId, ref: "College" }],
+    collegeFollowUpStatuses: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    studentFollowUpStatuses: {
+      type: Map,
+      of: String,
+      default: {},
+    },
     status: {
       type: String,
       default: "Pending",
       enum: ["Pending", "Approved", "Rejected", "Inactive", "Active"],
-    },
-    followUpStatus: {
-      type: String,
-      default: "Unvisited",
-      enum: ["Unvisited", "Visited", "Counseled"],
     },
     role: { type: String, default: "student" },
   },

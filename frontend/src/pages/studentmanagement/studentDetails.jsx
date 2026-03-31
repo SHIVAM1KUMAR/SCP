@@ -20,7 +20,7 @@ import {
 import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
 import {
   FollowUpStatusBadge,
-  normalizeFollowUpStatus,
+  getFollowUpStatusForCollege,
 } from "../../component/ui/studentmanagement/FollowUpStatus";
 import DeleteStudentModal from "./deleteStudentModal";
 import ReviewStudentModal from "./reveiwStudentmodal";
@@ -36,7 +36,8 @@ const getDocumentRef = (docs, key) =>
 export default function StudentDetails({ studentId: studentIdProp = null, embedded = false } = {}) {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
-  const { role } = getAuth();
+  const auth = getAuth();
+  const { role } = auth;
   const roleLower = String(role || "").toLowerCase();
   const isStudent = roleLower === "student";
   const isAdmin = roleLower === "admin";
@@ -82,11 +83,12 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const showCollegeActions = !embedded && isCollege;
   const showProfileActions = embedded && isStudent;
   const canActivateStudent = canManageStudent && ["Approved", "Inactive"].includes(student.status);
+  const collegeContextId = isCollege ? (auth?.id || auth?.userMasterId || null) : null;
 
   useEffect(() => {
-    if (!isCollege || embedded || !student?._id) return;
+    if (!isCollege || embedded || !student?._id || !collegeContextId) return;
 
-    const normalizedStatus = normalizeFollowUpStatus(student.followUpStatus);
+    const normalizedStatus = getFollowUpStatusForCollege(student, collegeContextId, "college");
     const shouldMarkVisited =
       normalizedStatus !== "Visited" &&
       normalizedStatus !== "Counseled" &&
@@ -95,10 +97,17 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
     if (!shouldMarkVisited) return;
 
     autoMarkedVisitedRef.current = student._id;
-    void updateStudentFollowUpStatus(student._id, "Visited").catch(() => {
+    void updateStudentFollowUpStatus(student._id, "Visited", collegeContextId, "college").catch(() => {
       autoMarkedVisitedRef.current = null;
     });
-  }, [embedded, isCollege, student?._id, student?.followUpStatus, updateStudentFollowUpStatus]);
+  }, [
+    embedded,
+    isCollege,
+    collegeContextId,
+    student?._id,
+    student?.collegeFollowUpStatuses,
+    updateStudentFollowUpStatus,
+  ]);
 
   const pageStyle = embedded
     ? { background: "transparent", minHeight: "auto", padding: 0, fontFamily: font.body }
@@ -166,7 +175,7 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <StatusBadge status={student.status || "Pending"} />
                     {!embedded && roleLower !== "student" && (
-                      <FollowUpStatusBadge status={student.followUpStatus || "Unvisited"} />
+                      <FollowUpStatusBadge status={getFollowUpStatusForCollege(student, collegeContextId, "college")} />
                     )}
                     {student.gender && (
                       <span style={{ fontSize: 12, color: C.slate, fontFamily: font.body, background: C.cream, border: `1px solid ${C.border}`, padding: "3px 10px", borderRadius: 6 }}>{student.gender}</span>

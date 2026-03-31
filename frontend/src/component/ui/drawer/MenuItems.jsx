@@ -94,7 +94,7 @@ const ALL_MENU_ITEMS = {
 
   Student: [
     { moduleId: 1, label: "College List",    icon: Icons.College,   path: "/student/colleges" },
-    { moduleId: 4, label: "My Applications", icon: Icons.Admission, path: "/student/admissions" },
+    { moduleId: 4, label: "Applied Colleges", icon: Icons.Admission, path: "/student/applied-colleges" },
   ],
 
   College: [
@@ -111,7 +111,7 @@ const ENABLED_MODULE_IDS = [
   // 2,   // Intake Management
   3,   // Student Management
   10,  // Payments
-  // 4,   // Admissions
+  4,   // Student applied colleges
   // 5,   // User Management
   // 6,   // Reports
   // 7,   // Settings

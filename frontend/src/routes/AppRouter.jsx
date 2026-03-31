@@ -44,7 +44,9 @@ const ROLE_ROUTES = {
     { index: true, element: <Navigate to="colleges" replace /> },
     { path: "colleges", element: <CollegeManagement /> },
     { path: "colleges/:id", element: <CollegeDetails /> },
-    { path: "admissions", element: <Navigate to="colleges" replace /> },
+    { path: "applied-colleges", element: <CollegeManagement scope="student" view="applied" /> },
+    { path: "applied-colleges/:id", element: <CollegeDetails /> },
+    { path: "admissions", element: <Navigate to="applied-colleges" replace /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
 };

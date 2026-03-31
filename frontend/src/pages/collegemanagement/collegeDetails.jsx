@@ -3,13 +3,15 @@
  * Fixed: responsive grid (single column on small screens), scroll inside cards.
  */
 
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useColleges } from "../../hooks/useCollege";
+import { useStudents } from "../../hooks/useStudents";
 import CollegeRegistrationForm from "../../component/forms/college/CollegeRegistrationForm";
 import DeleteCollegeModal from "./deletecollegeModal";
 import ActivateCollegeModal from "./activateCollege";
 import { getAuth } from "../../store/slice/auth.slice";
+import { getFollowUpStatusForCollege } from "../../component/ui/studentmanagement/FollowUpStatus";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const FILE_BASE_URL = BASE_URL.replace(/\/api\/?$/, "");
@@ -172,13 +174,23 @@ function ActionBtn({ label, onClick, variant="default", icon, disabled }) {
 export default function CollegeDetails({ collegeId: collegeIdProp = null, embedded = false } = {}) {
   const { id: routeId } = useParams();
   const navigate   = useNavigate();
-  const { role }   = getAuth();
+  const location = useLocation();
+  const auth = getAuth();
+  const { role }   = auth;
   const roleLower  = String(role || "").toLowerCase();
   const isStudent  = roleLower === "student";
   const isCollege  = roleLower === "college";
   const isAdmin    = roleLower === "admin";
-  const listRoute  = isStudent ? "/student/colleges" : isAdmin ? "/admin/college" : "/superadmin/college";
+  const isAppliedRoute = location.pathname.includes("/applied-colleges") || location.pathname.includes("/applied-students");
+  const listRoute  = isStudent
+    ? isAppliedRoute
+      ? "/student/applied-colleges"
+      : "/student/colleges"
+    : isAdmin
+      ? "/admin/college"
+      : "/superadmin/college";
   const collegeId = collegeIdProp ?? routeId;
+  const studentLookupId = isStudent ? (auth?.id || auth?.userMasterId || null) : null;
 
   const {
     college: collegeResponse,
@@ -192,17 +204,47 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
     isActivatingCollege,
     isRejectingCollege,
   } = useColleges(collegeId);
+  const {
+    student: currentStudent,
+    updateStudentFollowUpStatus,
+  } = useStudents(studentLookupId);
 
   const college = collegeResponse?.data?.data || collegeResponse?.data || collegeResponse || {};
 
   const [showEditModal,     setShowEditModal]     = useState(false);
   const [showDeleteModal,   setShowDeleteModal]   = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const autoMarkedVisitedRef = useRef(null);
   const pageStyle = embedded
     ? { background:"transparent", minHeight:"auto", padding:0, fontFamily:font.body }
     : { background:"#f4f6fb", minHeight:"100vh", padding:"20px 16px 48px", fontFamily:font.body };
   const showManagementActions = !embedded && !isStudent;
   const showProfileActions = embedded && isCollege;
+  const showStudentBackAction = !embedded && isStudent;
+
+  useEffect(() => {
+    if (!isStudent || embedded || !currentStudent?._id) return;
+
+    const normalizedStatus = getFollowUpStatusForCollege(currentStudent, collegeId, "student");
+    const shouldMarkVisited =
+      normalizedStatus !== "Visited" &&
+      normalizedStatus !== "Counseled" &&
+      autoMarkedVisitedRef.current !== currentStudent._id;
+
+    if (!shouldMarkVisited) return;
+
+    autoMarkedVisitedRef.current = currentStudent._id;
+    void updateStudentFollowUpStatus(currentStudent._id, "Visited", collegeId, "student").catch(() => {
+      autoMarkedVisitedRef.current = null;
+    });
+  }, [
+    embedded,
+    isStudent,
+    collegeId,
+    currentStudent?._id,
+    currentStudent?.studentFollowUpStatuses,
+    updateStudentFollowUpStatus,
+  ]);
 
   // ── Loading ──
   if (isCollegeLoading) {
@@ -322,6 +364,9 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
               {/* Actions */}
               <div className="cd-actions">
                 {embedded && !showProfileActions && (
+                  <ActionBtn label="← Back" variant="default" onClick={()=>navigate(listRoute)} />
+                )}
+                {showStudentBackAction && (
                   <ActionBtn label="← Back" variant="default" onClick={()=>navigate(listRoute)} />
                 )}
                 {showManagementActions && (

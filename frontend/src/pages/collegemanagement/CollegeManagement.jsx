@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useColleges } from "../../hooks/useCollege";
 import { useStudents } from "../../hooks/useStudents";
@@ -6,8 +6,14 @@ import CollegeRegistrationForm from "../../component/forms/college/CollegeRegist
 import DeleteCollegeModal from "./deletecollegeModal";
 import { getAuth } from "../../store/slice/auth.slice";
 import Loader from "../../component/ui/loader/Loader";
+import {
+  FollowUpStatusSelect,
+  buildFollowUpUpdateKey,
+  getFollowUpStatusForCollege,
+  normalizeFollowUpStatus,
+} from "../../component/ui/studentmanagement/FollowUpStatus";
 
-export default function CollegeManagement() {
+export default function CollegeManagement({ scope = "default", view = "all" } = {}) {
   const { colleges, isLoadingColleges, deleteCollege, fetchColleges, isDeletingCollege, toggleInterestAsync } = useColleges();
 
   const [search, setSearch] = useState("");
@@ -22,27 +28,50 @@ export default function CollegeManagement() {
   const { role, email, id, userMasterId } = getAuth();
   const roleLower = String(role || "").toLowerCase();
   const isStudent = roleLower === "student";
+  const isStudentAppliedView = isStudent && view === "applied";
+  const showFollowUpColumn = isStudent;
   const showPaymentColumn = !isStudent;
-  const baseCollegeRoute = roleLower === "admin" ? "/admin/college" : isStudent ? "/student/colleges" : "/superadmin/college";
+  const baseCollegeRoute = roleLower === "admin"
+    ? "/admin/college"
+    : isStudent
+      ? `/student/${isStudentAppliedView ? "applied-colleges" : "colleges"}`
+      : "/superadmin/college";
   const studentLookupId = isStudent ? (id || userMasterId || null) : null;
-  const { student: currentStudent, fetchStudent: fetchCurrentStudent } = useStudents(studentLookupId);
+  const {
+    student: currentStudent,
+    fetchStudent: fetchCurrentStudent,
+    updateStudentFollowUpStatus,
+    followUpUpdating,
+  } = useStudents(studentLookupId);
+  const appliedCollegeIds = useMemo(
+    () =>
+      new Set(
+        (currentStudent?.interestedColleges || []).map((college) =>
+          String(college?._id || college),
+        ),
+      ),
+    [currentStudent?.interestedColleges],
+  );
 
-  const filtered = colleges?.filter((c) => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return (
-      c.collegeName?.toLowerCase().includes(q) ||
-      c.email?.toLowerCase().includes(q) ||
-      c.collegeCode?.toLowerCase().includes(q)
+    const source = isStudentAppliedView
+      ? (colleges || []).filter((college) => appliedCollegeIds.has(String(college._id)))
+      : (colleges || []);
+
+    return source.filter((c) =>
+      (
+        c.collegeName?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.collegeCode?.toLowerCase().includes(q)
+      ),
     );
-  }) || [];
+  }, [appliedCollegeIds, colleges, isStudentAppliedView, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * rowsPerPage;
   const currentItems = filtered.slice(start, start + rowsPerPage);
-  const appliedCollegeIds = new Set(
-    (currentStudent?.interestedColleges || []).map((college) => String(college?._id || college)),
-  );
 
   const handleAdd = () => {
     setSelectedCollege(null);
@@ -66,8 +95,6 @@ export default function CollegeManagement() {
     setShowDeleteModal(true);
   };
 
-  // ✅ FIX: onConfirm now receives the id directly and calls deleteCollege
-  // DeleteCollegeModal calls onConfirm({ id }) — we extract id here
   const handleDeleteConfirm = async ({ id }) => {
     await deleteCollege(id);
     setShowDeleteModal(false);
@@ -103,10 +130,14 @@ export default function CollegeManagement() {
         >
           <div>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
-              {isStudent ? "College List" : "Colleges"}
+              {isStudentAppliedView ? "Your Applied Colleges" : isStudent ? "College List" : "Colleges"}
             </h2>
             <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#1a6fa8", fontWeight: 500 }}>
-              {isStudent ? "Browse colleges and apply for counselling" : "Manage College Applications"}
+              {isStudentAppliedView
+                ? "Track the colleges you applied to and keep your follow-up status updated"
+                : isStudent
+                  ? "Browse colleges and apply for counselling"
+                  : "Manage College Applications"}
             </p>
           </div>
 
@@ -147,15 +178,18 @@ export default function CollegeManagement() {
                 <th style={th}>Type</th>
                 <th style={th}>Email</th>
                 <th style={th}>Status</th>
+                {showFollowUpColumn && <th style={th}>Follow-up Status</th>}
                 {showPaymentColumn && <th style={th}>Payment</th>}
                 <th style={th}>Registered</th>
-                <th style={{ ...th, textAlign: "center" }}>{isStudent ? "Apply" : "Actions"}</th>
+                <th style={{ ...th, textAlign: "center" }}>
+                  {isStudentAppliedView ? "View" : isStudent ? "Apply" : "Actions"}
+                </th>
               </tr>
             </thead>
             <tbody>
               {isLoadingColleges ? (
                 <tr>
-                  <td colSpan={showPaymentColumn ? 8 : 7} style={{ textAlign: "center", padding: 40 }}>
+                  <td colSpan={showPaymentColumn ? (showFollowUpColumn ? 9 : 8) : (showFollowUpColumn ? 8 : 7)} style={{ textAlign: "center", padding: 40 }}>
                     <Loader size={30} />
                   </td>
                 </tr>
@@ -182,6 +216,24 @@ export default function CollegeManagement() {
                         {c.status}
                       </span>
                     </td>
+                    {showFollowUpColumn && (
+                      <td style={td} onClick={(e) => e.stopPropagation()}>
+                        <FollowUpStatusSelect
+                          value={getFollowUpStatusForCollege(currentStudent, c._id, "student")}
+                          loading={followUpUpdating === buildFollowUpUpdateKey(currentStudent?._id, c._id)}
+                          disabled={followUpUpdating === buildFollowUpUpdateKey(currentStudent?._id, c._id)}
+                          view="student"
+                          onChange={(nextStatus) =>
+                            updateStudentFollowUpStatus(
+                              currentStudent?._id,
+                              normalizeFollowUpStatus(nextStatus),
+                              c._id,
+                              "student",
+                            )
+                          }
+                        />
+                      </td>
+                    )}
                     {showPaymentColumn && (
                       <td style={td}>
                         <span className={`badge bg-${c.paymentStatus === "Paid" ? "success" : "danger"}`}>
@@ -191,7 +243,23 @@ export default function CollegeManagement() {
                     )}
                     <td style={td}>{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
                     <td style={{ ...td, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                      {isStudent ? (
+                      {isStudentAppliedView ? (
+                        <button
+                          onClick={() => navigate(`${baseCollegeRoute}/${c._id}`)}
+                          style={{
+                            background: "#e8f4fd",
+                            color: "#1a6fa8",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 14px",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          View
+                        </button>
+                      ) : isStudent ? (
                         <button
                           onClick={() => handleApply(c)}
                           disabled={appliedCollegeIds.has(String(c._id))}
@@ -238,7 +306,7 @@ export default function CollegeManagement() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={showPaymentColumn ? 8 : 7} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                  <td colSpan={showPaymentColumn ? (showFollowUpColumn ? 9 : 8) : (showFollowUpColumn ? 8 : 7)} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                     No colleges found
                   </td>
                 </tr>

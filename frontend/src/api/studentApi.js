@@ -40,9 +40,11 @@ export const rejectStudent = async (id) => {
   return data;
 };
 
-export const updateStudentFollowUpStatus = async (id, followUpStatus) => {
+export const updateStudentFollowUpStatus = async (id, followUpStatus, collegeId = null, scope = "student") => {
   const { data } = await axiosInstance.put(`/students/${id}/follow-up-status`, {
     followUpStatus,
+    collegeId,
+    scope,
   });
   return data;
 };

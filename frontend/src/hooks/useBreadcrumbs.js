@@ -15,6 +15,7 @@ const SEGMENT_LABELS = {
   intake:          "Intake Management",
   students:        "Student Management",
   admissions:      "Admissions",
+  "applied-colleges": "Applied Colleges",
   subscriptions:   "Subscriptions & Billing",
   users:           "User Management",
   list:            "Users",

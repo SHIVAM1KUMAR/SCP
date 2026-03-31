@@ -25,6 +25,8 @@ export function useStudents(studentId = null, toast = () => {}) {
 
   const isDetailMode = !!studentId;
   const extractId = (value) => (value && typeof value === "object" ? value.id || value._id : value);
+  const buildFollowUpUpdateKey = (studentIdValue, collegeId = null) =>
+    `${extractId(studentIdValue)}:${collegeId || "global"}`;
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -183,11 +185,12 @@ export function useStudents(studentId = null, toast = () => {}) {
     }
   };
 
-  const updateStudentFollowUpStatusAsync = async (id, followUpStatus) => {
+  const updateStudentFollowUpStatusAsync = async (id, followUpStatus, collegeId = null, scope = "student") => {
     const targetId = extractId(id);
-    setFollowUpUpdating(targetId);
+    const updateKey = buildFollowUpUpdateKey(targetId, collegeId);
+    setFollowUpUpdating(updateKey);
     try {
-      const data = await apiUpdateStudentFollowUpStatus(targetId, followUpStatus);
+      const data = await apiUpdateStudentFollowUpStatus(targetId, followUpStatus, collegeId, scope);
       toast(data?.message || "Student status updated", "success");
       await fetchStudents();
       if (isDetailMode) {
@@ -220,6 +223,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     isApprovingStudent: !!approving,
     isRejectingStudent: !!rejecting,
     isUpdatingStudentFollowUpStatus: !!followUpUpdating,
+    buildFollowUpUpdateKey,
     fetchStudents,
     fetchStudent,
     handleSave,

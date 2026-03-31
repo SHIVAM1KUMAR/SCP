@@ -11,6 +11,8 @@ import BasicTable from "../../component/ui/table/basicTable";
 import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
 import {
   FollowUpStatusSelect,
+  buildFollowUpUpdateKey,
+  getFollowUpStatusForCollege,
   normalizeFollowUpStatus,
 } from "../../component/ui/studentmanagement/FollowUpStatus";
 
@@ -156,12 +158,17 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
             header: "Follow-up Status",
             minWidth: 180,
             render: (s) => (
-              <FollowUpStatusSelect
-                value={s.followUpStatus || "Unvisited"}
-                loading={followUpUpdating === s._id}
-                disabled={followUpUpdating === s._id}
+                <FollowUpStatusSelect
+                value={getFollowUpStatusForCollege(s, currentCollegeId, "college")}
+                loading={followUpUpdating === buildFollowUpUpdateKey(s._id, currentCollegeId)}
+                disabled={followUpUpdating === buildFollowUpUpdateKey(s._id, currentCollegeId)}
                 onChange={(nextStatus) =>
-                  updateStudentFollowUpStatus(s._id, normalizeFollowUpStatus(nextStatus))
+                  updateStudentFollowUpStatus(
+                    s._id,
+                    normalizeFollowUpStatus(nextStatus),
+                    currentCollegeId,
+                    "college",
+                  )
                 }
               />
             ),
