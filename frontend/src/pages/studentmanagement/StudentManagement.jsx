@@ -9,9 +9,21 @@ import Search from "../../component/ui/search/Search";
 import Button from "../../component/ui/button/Button";
 import BasicTable from "../../component/ui/table/basicTable";
 import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
+import {
+  FollowUpStatusSelect,
+  normalizeFollowUpStatus,
+} from "../../component/ui/studentmanagement/FollowUpStatus";
 
 export default function StudentManagement({ scope = "default", view = "all" } = {}) {
-  const { students, isLoadingStudents, deleteStudent, fetchStudents, isDeletingStudent } = useStudents();
+  const {
+    students,
+    isLoadingStudents,
+    deleteStudent,
+    fetchStudents,
+    isDeletingStudent,
+    updateStudentFollowUpStatus,
+    followUpUpdating,
+  } = useStudents();
 
   const [search, setSearch] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -65,6 +77,7 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
   const currentItems = filtered.slice(start, start + rowsPerPage);
 
   const canManageStudents = roleLower === "superadmin" || roleLower === "admin";
+  const canUpdateFollowUpStatus = isCollege;
 
   const handleAdd = () => {
     setSelectedStudent(null);
@@ -135,6 +148,25 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
       minWidth: 120,
       render: (s) => <StatusBadge status={s.status || "Pending"} />,
     },
+    ...(canUpdateFollowUpStatus
+      ? [
+          {
+            key: "followUpStatus",
+            header: "Follow-up Status",
+            minWidth: 180,
+            render: (s) => (
+              <FollowUpStatusSelect
+                value={s.followUpStatus || "Unvisited"}
+                loading={followUpUpdating === s._id}
+                disabled={followUpUpdating === s._id}
+                onChange={(nextStatus) =>
+                  updateStudentFollowUpStatus(s._id, normalizeFollowUpStatus(nextStatus))
+                }
+              />
+            ),
+          },
+        ]
+      : []),
     {
       key: "createdAt",
       header: "Applied",

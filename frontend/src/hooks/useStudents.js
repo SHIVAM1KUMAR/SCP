@@ -8,6 +8,7 @@ import {
   activateStudent as apiActivateStudent,
   approveStudent as apiApproveStudent,
   rejectStudent as apiRejectStudent,
+  updateStudentFollowUpStatus as apiUpdateStudentFollowUpStatus,
 } from "../api/studentApi";
 
 export function useStudents(studentId = null, toast = () => {}) {
@@ -20,6 +21,7 @@ export function useStudents(studentId = null, toast = () => {}) {
   const [activating, setActivating] = useState(null);
   const [approving, setApproving] = useState(null);
   const [rejecting, setRejecting] = useState(null);
+  const [followUpUpdating, setFollowUpUpdating] = useState(null);
 
   const isDetailMode = !!studentId;
   const extractId = (value) => (value && typeof value === "object" ? value.id || value._id : value);
@@ -181,6 +183,25 @@ export function useStudents(studentId = null, toast = () => {}) {
     }
   };
 
+  const updateStudentFollowUpStatusAsync = async (id, followUpStatus) => {
+    const targetId = extractId(id);
+    setFollowUpUpdating(targetId);
+    try {
+      const data = await apiUpdateStudentFollowUpStatus(targetId, followUpStatus);
+      toast(data?.message || "Student status updated", "success");
+      await fetchStudents();
+      if (isDetailMode) {
+        await fetchStudent(studentId);
+      }
+      return data;
+    } catch (err) {
+      toast(err?.response?.data?.message || err?.message || "Failed to update status", "error");
+      return null;
+    } finally {
+      setFollowUpUpdating(null);
+    }
+  };
+
   return {
     students,
     student,
@@ -191,12 +212,14 @@ export function useStudents(studentId = null, toast = () => {}) {
     activating,
     approving,
     rejecting,
+    followUpUpdating,
     isLoadingStudents: loading,
     isStudentLoading: studentLoading,
     isDeletingStudent: !!deleting,
     isActivatingStudent: !!activating,
     isApprovingStudent: !!approving,
     isRejectingStudent: !!rejecting,
+    isUpdatingStudentFollowUpStatus: !!followUpUpdating,
     fetchStudents,
     fetchStudent,
     handleSave,
@@ -209,5 +232,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     activateStudentAsync,
     approveStudentAsync,
     rejectStudentAsync,
+    updateStudentFollowUpStatus: updateStudentFollowUpStatusAsync,
+    updateStudentFollowUpStatusAsync,
   };
 }

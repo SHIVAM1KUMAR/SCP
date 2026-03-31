@@ -3,7 +3,7 @@
  * Keeps the same page flow, but pushes the visual pieces into shared UI helpers.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useStudents } from "../../hooks/useStudents";
 import StudentRegistrationForm from "../../component/forms/student/studentRegistration";
@@ -18,6 +18,10 @@ import {
   AcademicBadge,
 } from "../../component/ui/studentmanagement/StudentDetailParts";
 import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
+import {
+  FollowUpStatusBadge,
+  normalizeFollowUpStatus,
+} from "../../component/ui/studentmanagement/FollowUpStatus";
 import DeleteStudentModal from "./deleteStudentModal";
 import ReviewStudentModal from "./reveiwStudentmodal";
 import { getAuth } from "../../store/slice/auth.slice";
@@ -59,6 +63,7 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
     approveStudentAsync,
     rejectStudentAsync,
     fetchStudent,
+    updateStudentFollowUpStatus,
     isDeletingStudent,
     isActivatingStudent,
     isApprovingStudent,
@@ -71,11 +76,29 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const autoMarkedVisitedRef = useRef(null);
 
   const canManageStudent = !embedded && (isAdmin || roleLower === "superadmin");
   const showCollegeActions = !embedded && isCollege;
   const showProfileActions = embedded && isStudent;
   const canActivateStudent = canManageStudent && ["Approved", "Inactive"].includes(student.status);
+
+  useEffect(() => {
+    if (!isCollege || embedded || !student?._id) return;
+
+    const normalizedStatus = normalizeFollowUpStatus(student.followUpStatus);
+    const shouldMarkVisited =
+      normalizedStatus !== "Visited" &&
+      normalizedStatus !== "Counseled" &&
+      autoMarkedVisitedRef.current !== student._id;
+
+    if (!shouldMarkVisited) return;
+
+    autoMarkedVisitedRef.current = student._id;
+    void updateStudentFollowUpStatus(student._id, "Visited").catch(() => {
+      autoMarkedVisitedRef.current = null;
+    });
+  }, [embedded, isCollege, student?._id, student?.followUpStatus, updateStudentFollowUpStatus]);
 
   const pageStyle = embedded
     ? { background: "transparent", minHeight: "auto", padding: 0, fontFamily: font.body }
@@ -141,6 +164,9 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
                   </h1>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <StatusBadge status={student.status || "Pending"} />
+                    {!embedded && roleLower !== "student" && (
+                      <FollowUpStatusBadge status={student.followUpStatus || "Unvisited"} />
+                    )}
                     {student.gender && (
                       <span style={{ fontSize: 12, color: C.slate, fontFamily: font.body, background: C.cream, border: `1px solid ${C.border}`, padding: "3px 10px", borderRadius: 6 }}>{student.gender}</span>
                     )}

@@ -71,6 +71,11 @@ const studentSchema = new mongoose.Schema(
       default: "Pending",
       enum: ["Pending", "Approved", "Rejected", "Inactive", "Active"],
     },
+    followUpStatus: {
+      type: String,
+      default: "Unvisited",
+      enum: ["Unvisited", "Visited", "Counseled"],
+    },
     role: { type: String, default: "student" },
   },
   {

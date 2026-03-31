@@ -12,6 +12,7 @@ import {
   approveStudent,
   rejectStudent,
   activateStudent,
+  updateStudentFollowUpStatus,
 } from "../../controllers/student/studentController.js";
 
 const router = express.Router();
@@ -71,5 +72,6 @@ router.delete("/:id", deleteStudent);
 router.post("/:id/approve", approveStudent);
 router.post("/:id/reject", rejectStudent);
 router.post("/:id/activate", activateStudent);
+router.put("/:id/follow-up-status", updateStudentFollowUpStatus);
 
 export default router;

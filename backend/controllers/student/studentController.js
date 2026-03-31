@@ -23,6 +23,12 @@ const ALL_DOCUMENT_KEYS = [
 
 const LEGACY_STATUS_DEFAULT = "Inactive";
 const REGISTRATION_STATUS_DEFAULT = "Pending";
+const FOLLOW_UP_STATUS_DEFAULT = "Unvisited";
+const FOLLOW_UP_STATUS_VALUES = ["Unvisited", "Visited", "Counseled"];
+const LEGACY_FOLLOW_UP_STATUS_MAP = {
+  unseen: "Unvisited",
+  "not visited": "Unvisited",
+};
 
 const toText = (value, fallback = "") => {
   if (value === undefined || value === null) return fallback;
@@ -192,6 +198,8 @@ const buildStudentPayload = (req, existingStudent = null) => {
 
   const statusFromBody = toOptionalText(body.status || existingStudent?.status);
   const status = statusFromBody || (isDetailed ? REGISTRATION_STATUS_DEFAULT : LEGACY_STATUS_DEFAULT);
+  const followUpStatusFromBody = normalizeFollowUpStatus(body.followUpStatus || existingStudent?.followUpStatus);
+  const followUpStatus = followUpStatusFromBody || existingStudent?.followUpStatus || FOLLOW_UP_STATUS_DEFAULT;
 
   return {
     firstName,
@@ -227,6 +235,7 @@ const buildStudentPayload = (req, existingStudent = null) => {
     otherExamDetails: toOptionalText(body.otherExamDetails || existingStudent?.otherExamDetails),
     documents,
     status,
+    followUpStatus,
     isDetailed,
   };
 };
@@ -237,6 +246,19 @@ const validateRequiredDocuments = (documents) => {
 };
 
 const sanitizeEmail = (value) => toText(value).toLowerCase();
+
+const normalizeFollowUpStatus = (value) => {
+  const status = toOptionalText(value);
+  if (!status) return "";
+
+  const legacyMatch = LEGACY_FOLLOW_UP_STATUS_MAP[status.toLowerCase()];
+  if (legacyMatch) return legacyMatch;
+
+  const matched = FOLLOW_UP_STATUS_VALUES.find(
+    (item) => item.toLowerCase() === status.toLowerCase()
+  );
+  return matched || "";
+};
 
 // Fetch all students
 export const getStudents = async (req, res) => {
@@ -474,6 +496,37 @@ export const activateStudent = async (req, res) => {
     res.json({
       success: true,
       message: "Student activated and credentials sent via email",
+      data: attachStudentViews(student),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const updateStudentFollowUpStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const student = await Student.findById(id);
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    const nextStatus = normalizeFollowUpStatus(req.body?.followUpStatus);
+
+    if (!nextStatus) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid follow-up status. Allowed values: ${FOLLOW_UP_STATUS_VALUES.join(", ")}`,
+      });
+    }
+
+    student.followUpStatus = nextStatus;
+    await student.save();
+
+    res.json({
+      success: true,
+      message: "Student follow-up status updated successfully",
       data: attachStudentViews(student),
     });
   } catch (error) {
