@@ -162,7 +162,7 @@ export default function SuperAdminModal({ editData, onClose, onSave, saving }) {
           inset: 0,
           background: "rgba(15,23,42,0.45)",
           backdropFilter: "blur(4px)",
-          zIndex: 1000,
+          zIndex: 2000,
           overflowY: "auto",
           padding: "32px 16px",
         }}
