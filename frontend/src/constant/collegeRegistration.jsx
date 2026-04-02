@@ -1,5 +1,5 @@
 // ─── Step Labels ──────────────────────────────────────────────────────────────
-export const STEPS = ["Basic Info", "Address", "Documents", "Courses Offered", "Payment"];
+export const STEPS = ["Basic Info", "Address", "Documents", "Courses Offered", "Subscription & Payment"];
 
 // ─── College Type Options ─────────────────────────────────────────────────────
 export const COLLEGE_TYPES = ["Government", "Private", "Deemed", "Autonomous"];

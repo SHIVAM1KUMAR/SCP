@@ -1,5 +1,6 @@
 import College from "../../models/college/collegeModal.js";
 import Student from "../../models/student/studentModal.js";
+import { normalizeSubscriptionSnapshot } from "../subscription/subscriptionController.js";
 import bcrypt from "bcryptjs";
 import path from "path";
 import { sendCollegeCredentialsEmail } from "../../utils/mailer.js";
@@ -136,6 +137,7 @@ export const registerCollege = async (req, res) => {
       website,
       establishedYear,
       affiliation,
+      subscriptionId,
     } = req.body;
 
     // ✅ Parse address properly
@@ -186,6 +188,14 @@ export const registerCollege = async (req, res) => {
 
     console.log("📚 COURSES:", parsedCourses);
 
+    const subscription = await normalizeSubscriptionSnapshot(subscriptionId);
+    if (subscriptionId && !subscription) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected subscription not found",
+      });
+    }
+
     // ✅ Handle documents
     const documents = {};
     if (req.files) {
@@ -219,6 +229,8 @@ export const registerCollege = async (req, res) => {
       collegeType,
       address,
       documents,
+      subscription,
+      paymentAmount: subscription ? subscription.amount : null,
       courses: parsedCourses,
       status: "Pending",
       paymentStatus: documents.paymentReceipt ? "Uploaded" : "Unpaid",
@@ -444,6 +456,17 @@ export const updateCollege = async (req, res) => {
       ...(college.documents || {}),
     };
 
+    let subscription = college.subscription || null;
+    if (req.body.subscriptionId) {
+      subscription = await normalizeSubscriptionSnapshot(req.body.subscriptionId);
+      if (!subscription) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected subscription not found",
+        });
+      }
+    }
+
     if (req.files?.logo?.[0]) documents.logo = toStoredUploadPath(req.files.logo[0]);
     if (req.files?.affiliationCert?.[0]) documents.affiliationCert = toStoredUploadPath(req.files.affiliationCert[0]);
     if (req.files?.registrationCert?.[0]) documents.registrationCert = toStoredUploadPath(req.files.registrationCert[0]);
@@ -467,6 +490,8 @@ export const updateCollege = async (req, res) => {
     college.location = locationParts.length ? locationParts.join(", ") : college.location;
     college.courses = parsedCourses;
     college.documents = documents;
+    college.subscription = subscription;
+    college.paymentAmount = subscription ? subscription.amount : (college.paymentAmount ?? null);
     if (req.files?.paymentReceipt?.[0]) {
       college.paymentStatus = "Uploaded";
     }

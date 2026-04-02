@@ -13,6 +13,7 @@ import CollegeDetails from "../pages/collegemanagement/collegeDetails";
 import StudentManagement from "../pages/studentmanagement/StudentManagement";
 import StudentDetails from "../pages/studentmanagement/studentDetails";
 import Payments from "../pages/paymentsmanagement/Payments";
+import SubscriptionManagement from "../pages/subscriptionManagement/SubscriptionManagement";
 
 const ROLE_ROUTES = {
   SuperAdmin: [
@@ -21,6 +22,7 @@ const ROLE_ROUTES = {
     { path: "college/:id", element: <CollegeDetails /> },
     { path: "students", element: <StudentManagement /> },
     { path: "students/:id", element: <StudentDetails /> },
+    { path: "subscriptions", element: <SubscriptionManagement /> },
     { path: "payments", element: <Payments /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],

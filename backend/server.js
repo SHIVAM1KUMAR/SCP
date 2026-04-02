@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import studentRoutes from "./routes/student/studentRoutes.js";
 import collegeRoutes from "./routes/college/collegeRoutes.js";
+import subscriptionRoutes from "./routes/subscription/subscriptionRoutes.js";
 
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -51,6 +52,7 @@ app.use("/uploads", express.static(uploadsPath));
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/colleges", collegeRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // ─── Socket Logic ─────────────────────────────────────────────
 io.on("connection", (socket) => {

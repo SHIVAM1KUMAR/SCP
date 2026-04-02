@@ -31,6 +31,16 @@ const collegeSchema = new mongoose.Schema({
     paymentReceipt: String,
   },
 
+  subscription: {
+    subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" },
+    subscriptionName: { type: String, default: "" },
+    subscriptionType: { type: String, default: "" },
+    months: { type: Number, default: null },
+    amount: { type: Number, default: null },
+  },
+
+  paymentAmount: { type: Number, default: null },
+
   // ✅ Courses (same as before)
   courses: [{
     courseName: String,

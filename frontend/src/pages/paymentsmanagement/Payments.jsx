@@ -140,6 +140,18 @@ export default function Payments() {
       render: (c) => <StatusBadge status={c.paymentStatus || c.status || "Pending"} />,
     },
     {
+      key: "subscription",
+      header: "Subscription",
+      minWidth: 180,
+      render: (c) => c.subscription?.subscriptionName || c.subscription?.subscriptionType || "-",
+    },
+    {
+      key: "paymentAmount",
+      header: "Amount",
+      minWidth: 110,
+      render: (c) => (c.paymentAmount ? `₹${Number(c.paymentAmount).toLocaleString("en-IN")}` : "-"),
+    },
+    {
       key: "actions",
       header: "Action",
       minWidth: 320,

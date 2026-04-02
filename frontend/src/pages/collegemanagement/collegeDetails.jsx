@@ -273,6 +273,21 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
   const docs             = college.documentFiles || college.documents || college.docs || {};
   const addr             = college.address || {};
   const establishedValue = college.established || college.establishedYear || "—";
+  const subscription     = college.subscription || {};
+  const subscriptionLabel =
+    subscription.subscriptionName ||
+    subscription.subscriptionType ||
+    "—";
+  const subscriptionMonths =
+    subscription.months
+      ? `${subscription.months} month${Number(subscription.months) === 1 ? "" : "s"}`
+      : "—";
+  const subscriptionAmount =
+    subscription.amount !== undefined && subscription.amount !== null
+      ? `₹${Number(subscription.amount).toLocaleString("en-IN")}`
+      : college.paymentAmount !== undefined && college.paymentAmount !== null
+        ? `₹${Number(college.paymentAmount).toLocaleString("en-IN")}`
+        : "—";
 
   // ✅ Receives { id } from DeleteCollegeModal, navigates away after delete
   const handleDeleteConfirm = async ({ id: collegeId }) => {
@@ -431,6 +446,16 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
               <InfoField label="State"         value={addr.state} />
               <InfoField label="PIN Code"      value={addr.pincode} mono />
               <InfoField label="Country"       value={addr.country} />
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Subscription & Billing" icon="💳">
+            <div className="cd-info-grid">
+              <InfoField label="Subscription Plan" value={subscriptionLabel} fullWidth />
+              <InfoField label="Subscription Type" value={subscription.subscriptionType} />
+              <InfoField label="Duration" value={subscriptionMonths} />
+              <InfoField label="Subscription Amount" value={subscriptionAmount} />
+              <InfoField label="Payment Status" value={college.paymentStatus} />
             </div>
           </SectionCard>
 

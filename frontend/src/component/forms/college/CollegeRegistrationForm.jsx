@@ -19,6 +19,7 @@ import Notification from "../../ui/notification/notificationmenu.jsx";
 
 // ─── App-level imports ────────────────────────────────────────────────────────
 import { useColleges } from "../../../hooks/useCollege";
+import { useSubscriptions } from "../../../hooks/useSubscriptions";
 import {
   STEPS,
   COLLEGE_TYPES,
@@ -28,6 +29,11 @@ import {
   MAX_FILE_SIZE_MB,
   MAX_FILE_SIZE_BYTES,
 } from "../../../constant/collegeRegistration.jsx";
+import {
+  DEFAULT_UPI_ID,
+  buildSubscriptionAmountLabel,
+  buildSubscriptionDisplayName,
+} from "../../../constant/subscription.jsx";
 import {
   INITIAL_FORM_VALUES,
   INITIAL_FILE_VALUES,
@@ -422,6 +428,125 @@ function StepPayment({ files, onFileChange, fileErrors }) {
 }
 
 // ─── Step progress bar ────────────────────────────────────────────────────────
+function StepSubscriptionPayment({
+  files,
+  onFileChange,
+  fileErrors,
+  subscriptions = [],
+  selectedSubscriptionId,
+  onSelectSubscription,
+  loadingSubscriptions = false,
+}) {
+  const upiId = DEFAULT_UPI_ID;
+  const selectedSubscription =
+    subscriptions.find((subscription) => String(subscription._id) === String(selectedSubscriptionId)) ||
+    subscriptions[0] ||
+    null;
+  const paymentAmount = selectedSubscription?.amount ?? 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <Card style={{ padding: 18 }}>
+        <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700 }}>
+          Choose a Subscription Plan
+        </p>
+        {fileErrors?.subscriptionId && (
+          <Notification type="error" message={fileErrors.subscriptionId} style={{ marginBottom: 12 }} />
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
+          {loadingSubscriptions ? (
+            <Notification type="warning" message="Loading subscriptions..." />
+          ) : subscriptions.length ? subscriptions.map((subscription) => {
+            const isSelected = String(subscription._id) === String(selectedSubscriptionId);
+            return (
+              <button
+                key={subscription._id}
+                type="button"
+                onClick={() => onSelectSubscription(subscription._id)}
+                style={{
+                  textAlign: "left",
+                  border: isSelected ? "2px solid #c9973a" : "1px solid #e2e8f4",
+                  background: isSelected ? "#fff8ea" : "#fff",
+                  borderRadius: 12,
+                  padding: 14,
+                  cursor: "pointer",
+                  boxShadow: isSelected ? "0 8px 24px rgba(201,151,58,.12)" : "none",
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#0f2044" }}>
+                  {buildSubscriptionDisplayName(subscription)}
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                  {subscription.months} month{Number(subscription.months) === 1 ? "" : "s"}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#c9973a", marginTop: 8 }}>
+                  {buildSubscriptionAmountLabel(subscription)}
+                </div>
+              </button>
+            );
+          }) : (
+            <Notification
+              type="warning"
+              message="No active subscriptions found. Please create one from the subscription management page."
+            />
+          )}
+        </div>
+      </Card>
+
+      <Card style={{ padding: 18, textAlign: "center" }}>
+        <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700 }}>
+          Scan QR to Pay Registration Fee
+        </p>
+        <div
+          style={{
+            width: 130,
+            height: 130,
+            margin: "0 auto 12px",
+            background: "#fff",
+            border: "1px solid #e2e8f4",
+            borderRadius: 9,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            color: "#94a3b8",
+          }}
+        >
+          [QR CODE]
+        </div>
+        <p style={{ margin: "0 0 5px", fontSize: 13, color: "#64748b" }}>
+          Selected plan amount:
+        </p>
+        <div style={{ fontWeight: 700, fontSize: 18, color: "#c9973a" }}>
+          {buildSubscriptionAmountLabel(selectedSubscription || { amount: paymentAmount })}
+        </div>
+        <p style={{ margin: "10px 0 5px", fontSize: 13, color: "#64748b" }}>
+          Or pay to UPI ID:
+        </p>
+        <div style={{ fontWeight: 700, fontSize: 15, color: "#c9973a" }}>
+          {upiId}
+        </div>
+      </Card>
+
+      <Card style={{ padding: 18 }}>
+        <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700 }}>
+          Upload Payment Proof
+        </p>
+        <FileUpload
+          label="Payment Receipt / Screenshot"
+          name="paymentReceipt"
+          accept={ACCEPTED_DOC}
+          value={files.paymentReceipt}
+          onChange={(file) => onFileChange("paymentReceipt", file)}
+          error={fileErrors?.paymentReceipt}
+          hint="JPG, PNG or PDF — required"
+          required
+        />
+      </Card>
+    </div>
+  );
+}
+
 function StepBar({ current }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 24, overflowX: "auto", gap: 0 }}>
@@ -483,6 +608,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
   ref,
 ) {
   const { updateCollege, registerCollege } = useColleges();
+  const { activeSubscriptions, isLoadingSubscriptions } = useSubscriptions();
   const isEdit = !!defaultValues && Object.keys(defaultValues).length > 0;
 
   const [step, setStep]           = useState(0);
@@ -490,6 +616,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
   const [fileErrors, setFileErrors] = useState({});
   const [loading, setLoading]     = useState(false);
   const [success, setSuccess]     = useState(false);
+  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState("");
 
   const methods = useForm({
     defaultValues: isEdit ? buildFormValues(defaultValues) : INITIAL_FORM_VALUES,
@@ -518,6 +645,11 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
       });
       setFileErrors({});
       setSuccess(false);
+      setSelectedSubscriptionId(
+        defaultValues?.subscription?.subscriptionId ||
+        defaultValues?.subscriptionId ||
+        "",
+      );
       return;
     }
     reset(INITIAL_FORM_VALUES);
@@ -525,7 +657,14 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
     setStep(0);
     setFileErrors({});
     setSuccess(false);
+    setSelectedSubscriptionId("");
   }, [defaultValues, isEdit, reset]);
+
+  useEffect(() => {
+    if (!selectedSubscriptionId && activeSubscriptions.length > 0) {
+      setSelectedSubscriptionId(String(activeSubscriptions[0]._id));
+    }
+  }, [activeSubscriptions, selectedSubscriptionId]);
 
   React.useImperativeHandle(ref, () => ({
     handleNext,
@@ -558,6 +697,10 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
     }
 
     if (s === 4) {
+      if (!selectedSubscriptionId) {
+        setFileErrors({ subscriptionId: "Please choose a subscription plan" });
+        return false;
+      }
       const hasExistingReceipt = isExistingFileRef(resolveExistingFileValue(defaultValues, "paymentReceipt"));
       if (!isEdit && !files.paymentReceipt) {
         setFileErrors({ paymentReceipt: "Payment receipt is required" });
@@ -621,6 +764,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
       fd.append("affiliation",     data.affiliation || "");
       fd.append("address",         JSON.stringify(data.address));
       fd.append("courses",         JSON.stringify(data.courses || []));
+      fd.append("subscriptionId",  selectedSubscriptionId);
 
       Object.entries(files).forEach(([k, v]) => {
         if (v && !isExistingFileRef(v)) fd.append(k, v);
@@ -731,7 +875,20 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
               {step === 1 && <StepAddress />}
               {step === 2 && <StepDocuments files={files} onFileChange={setFile} fileErrors={fileErrors} />}
               {step === 3 && <StepCourses />}
-              {step === 4 && <StepPayment  files={files} onFileChange={setFile} fileErrors={fileErrors} />}
+              {step === 4 && (
+                <StepSubscriptionPayment
+                  files={files}
+                  onFileChange={setFile}
+                  fileErrors={fileErrors}
+                  subscriptions={activeSubscriptions}
+                  selectedSubscriptionId={selectedSubscriptionId}
+                  loadingSubscriptions={isLoadingSubscriptions}
+                  onSelectSubscription={(id) => {
+                    setSelectedSubscriptionId(id);
+                    setFileErrors((prev) => ({ ...prev, subscriptionId: undefined }));
+                  }}
+                />
+              )}
 
               {/* Global submit error */}
               {fileErrors._submit && (
