@@ -39,6 +39,7 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
   const { role, id, userMasterId } = getAuth();
   const roleLower = String(role || "").toLowerCase();
   const isCollege = scope === "college" || roleLower === "college";
+  const isAppliedView = view === "applied";
   const currentCollegeId = id || userMasterId || null;
   const baseStudentRoute =
     roleLower === "admin"
@@ -58,11 +59,14 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
     );
   }, [currentCollegeId, isCollege, students]);
 
-  const activeStudents = isCollege
-    ? view === "applied"
-      ? collegeAppliedStudents
-      : (students || [])
-    : (students || []);
+  const activeStudents = useMemo(
+    () => (isCollege
+      ? view === "applied"
+        ? collegeAppliedStudents
+        : (students || [])
+      : (students || [])),
+    [collegeAppliedStudents, isCollege, students, view],
+  );
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -80,6 +84,7 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
 
   const canManageStudents = roleLower === "superadmin" || roleLower === "admin";
   const canUpdateFollowUpStatus = isCollege;
+  const followUpVariant = isCollege && isAppliedView ? "extended" : "basic";
 
   const handleAdd = () => {
     setSelectedStudent(null);
@@ -97,7 +102,7 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
   };
 
   const handleDeleteConfirm = async ({ id }) => {
-    const result = await deleteStudent(id);
+    await deleteStudent(id);
     setShowDeleteModal(false);
     setStudentToDelete(null);
     return true;
@@ -160,6 +165,7 @@ export default function StudentManagement({ scope = "default", view = "all" } = 
             render: (s) => (
                 <FollowUpStatusSelect
                 value={getFollowUpStatusForCollege(s, currentCollegeId, "college")}
+                variant={followUpVariant}
                 loading={followUpUpdating === buildFollowUpUpdateKey(s._id, currentCollegeId)}
                 disabled={followUpUpdating === buildFollowUpUpdateKey(s._id, currentCollegeId)}
                 onChange={(nextStatus) =>

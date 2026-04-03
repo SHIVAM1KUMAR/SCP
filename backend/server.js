@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import studentRoutes from "./routes/student/studentRoutes.js";
 import collegeRoutes from "./routes/college/collegeRoutes.js";
 import subscriptionRoutes from "./routes/subscription/subscriptionRoutes.js";
+import counsellingRoutes from "./routes/counselling/counsellingRoutes.js";
 
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -53,6 +54,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/colleges", collegeRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/counselling", counsellingRoutes);
+
+app.set("io", io);
 
 // ─── Socket Logic ─────────────────────────────────────────────
 io.on("connection", (socket) => {
@@ -60,6 +64,25 @@ io.on("connection", (socket) => {
 
   socket.on("join_room", (data) => {
     socket.join(data.room);
+  });
+
+  socket.on("join_notifications", (data = {}) => {
+    const { role, collegeId, studentId } = data;
+    const normalizedRole = String(role || "").toLowerCase();
+
+    if (normalizedRole === "superadmin") {
+      socket.join("counselling:superadmin");
+      return;
+    }
+
+    if (normalizedRole === "college" && collegeId) {
+      socket.join(`counselling:college:${collegeId}`);
+      return;
+    }
+
+    if (normalizedRole === "student" && studentId) {
+      socket.join(`counselling:student:${studentId}`);
+    }
   });
 
   socket.on("send_message", (data) => {

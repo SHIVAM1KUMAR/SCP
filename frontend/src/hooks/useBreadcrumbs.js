@@ -25,7 +25,7 @@ const SEGMENT_LABELS = {
   dashboard:       "Dashboard",
   courses:         "Courses & Programs",
   tests:           "Test Schedule",
-  counselling:     "Counsellor Booking",
+  counselling:     "Counselling",
   counsellors:     "Counsellors",
   appointments:    "Appointments",
   slots:           "Slots",

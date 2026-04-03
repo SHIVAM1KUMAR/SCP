@@ -20,6 +20,7 @@ import {
 import { StatusBadge } from "../../component/ui/studentmanagement/StatusBadge";
 import {
   FollowUpStatusBadge,
+  collapseFollowUpStatusToBasic,
   getFollowUpStatusForCollege,
 } from "../../component/ui/studentmanagement/FollowUpStatus";
 import DeleteStudentModal from "./deleteStudentModal";
@@ -72,6 +73,8 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   } = useStudents(studentId);
 
   const student = studentResponse?.data?.data || studentResponse?.data || studentResponse || {};
+  const studentIdValue = student?._id || null;
+  const collegeFollowUpStatuses = student?.collegeFollowUpStatuses;
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -86,26 +89,29 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const collegeContextId = isCollege ? (auth?.id || auth?.userMasterId || null) : null;
 
   useEffect(() => {
-    if (!isCollege || embedded || !student?._id || !collegeContextId) return;
+    if (!isCollege || embedded || !studentIdValue || !collegeContextId) return;
 
-    const normalizedStatus = getFollowUpStatusForCollege(student, collegeContextId, "college");
+    const normalizedStatus = collapseFollowUpStatusToBasic(getFollowUpStatusForCollege(
+      { collegeFollowUpStatuses },
+      collegeContextId,
+      "college",
+    ));
     const shouldMarkVisited =
-      normalizedStatus !== "Visited" &&
-      normalizedStatus !== "Counseled" &&
-      autoMarkedVisitedRef.current !== student._id;
+      normalizedStatus === "Unvisited" &&
+      autoMarkedVisitedRef.current !== studentIdValue;
 
     if (!shouldMarkVisited) return;
 
-    autoMarkedVisitedRef.current = student._id;
-    void updateStudentFollowUpStatus(student._id, "Visited", collegeContextId, "college").catch(() => {
+    autoMarkedVisitedRef.current = studentIdValue;
+    void updateStudentFollowUpStatus(studentIdValue, "Visited", collegeContextId, "college").catch(() => {
       autoMarkedVisitedRef.current = null;
     });
   }, [
     embedded,
     isCollege,
     collegeContextId,
-    student?._id,
-    student?.collegeFollowUpStatuses,
+    studentIdValue,
+    collegeFollowUpStatuses,
     updateStudentFollowUpStatus,
   ]);
 
@@ -138,7 +144,7 @@ export default function StudentDetails({ studentId: studentIdProp = null, embedd
   const fullName = `${student.firstName || ""} ${student.lastName || ""}`.trim();
 
   const handleDeleteConfirm = async ({ id }) => {
-    const result = await deleteStudentAsync(id);
+    await deleteStudentAsync(id);
     setShowDeleteModal(false);
     navigate(listRoute);
     return true;

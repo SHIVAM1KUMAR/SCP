@@ -1,5 +1,6 @@
 // ─── MenuItems.jsx ────────────────────────────────────────────────────────────
 // DATA-DRIVEN sidebar menu.
+/* eslint-disable react-refresh/only-export-components */
 // To show a menu item: uncomment its line in ENABLED_MODULE_IDS below.
 // The sidebar will automatically show/hide items based on this list.
 //
@@ -61,6 +62,12 @@ export const Icons = {
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
     </svg>
   ),
+  Counselling: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={18} height={18}>
+      <path d="M4 5h16v10H7l-3 3V5z" />
+      <path d="M8 9h8M8 12h5" />
+    </svg>
+  ),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,6 +81,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 3, label: "Student Management", icon: Icons.Students,  path: "/superadmin/students"   },
     { moduleId: 11, label: "Subscriptions",       icon: Icons.Reports,  path: "/superadmin/subscriptions" },
     { moduleId: 10, label: "Payments",            icon: Icons.Reports,   path: "/superadmin/payments"   },
+    { moduleId: 14, label: "Counselling",         icon: Icons.Counselling, path: "/superadmin/counselling" },
     { moduleId: 4, label: "Admissions",           icon: Icons.Admission, path: "/superadmin/admissions" },
     {
       moduleId: 5, label: "User Management", icon: Icons.Users, path: "/superadmin/users",
@@ -96,11 +104,14 @@ const ALL_MENU_ITEMS = {
   Student: [
     { moduleId: 1, label: "College List",    icon: Icons.College,   path: "/student/colleges" },
     { moduleId: 4, label: "Applied Colleges", icon: Icons.Admission, path: "/student/applied-colleges" },
+    { moduleId: 14, label: "Counselling",     icon: Icons.Counselling, path: "/student/counselling" },
   ],
 
   College: [
     { moduleId: 3, label: "Student Management", icon: Icons.Students, path: "/college/students" },
     { moduleId: 13, label: "Applied Students", icon: Icons.Admission, path: "/college/applied-students" },
+    { moduleId: 14, label: "Add Counsellor", icon: Icons.Counselling, path: "/college/counselling/add-counsellor" },
+    { moduleId: 14, label: "Schedule Counselling", icon: Icons.Counselling, path: "/college/counselling/schedule" },
   ],
 };
 
@@ -113,6 +124,7 @@ const ENABLED_MODULE_IDS = [
   3,   // Student Management
   11,  // Subscriptions
   10,  // Payments
+  14,  // Counselling
   4,   // Student applied colleges
   // 5,   // User Management
   // 6,   // Reports

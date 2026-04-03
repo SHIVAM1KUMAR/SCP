@@ -1,51 +1,37 @@
-import { useEffect, useState, useRef } from "react";
-import dayjs from "dayjs";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useEffect, useRef, useState } from "react";
+import { useCounselling } from "../../../hooks/useCounselling";
+import { useToast } from "../../../context/ToastContext";
 
-// ─── NotificationMenu ─────────────────────────────────────────────────────────
-// AmniCare: MUI Badge + Menu + SignalR + Redux auth
-// EduAdmit: Custom dropdown + localStorage auth + WebSocket hook-ready
-//
-// SignalR replaced with a WebSocket/polling stub — wire up your real
-// notification service by calling addNotification(payload) from outside,
-// or replace the useEffect stub with your own signalRService calls.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ── SVG Icons ─────────────────────────────────────────────────────────────────
-const BellIcon     = ({ filled }) => (
+const BellIcon = ({ filled }) => (
   <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.8} width={20} height={20}>
     <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
     <path d="M13.73 21a2 2 0 01-3.46 0" />
   </svg>
 );
-const PersonIcon   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={13} height={13}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx={12} cy={7} r={4} /></svg>;
-const ClockIcon    = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={13} height={13}><circle cx={12} cy={12} r={10} /><polyline points="12 6 12 12 16 14" /></svg>;
-const CheckAllIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><polyline points="1 12 5 16 13 8" /><polyline points="9 12 13 16 21 8" /></svg>;
-const BackIcon     = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><polyline points="15 18 9 12 15 6" /></svg>;
-const TrashIcon    = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /></svg>;
 
-const formatDate = (date) => dayjs(date).format("MMM D, YYYY · h:mm a");
+const BackIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><polyline points="15 18 9 12 15 6" /></svg>;
+const CheckAllIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><polyline points="1 12 5 16 13 8" /><polyline points="9 12 13 16 21 8" /></svg>;
+const TrashIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M6 6l1 14h10l1-14" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>;
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const BANNER_STYLES = {
-  info: {
-    background: "#eff6ff",
-    border: "#bfdbfe",
-    color: "#1d4ed8",
-  },
-  warning: {
-    background: "#fffbeb",
-    border: "#fde68a",
-    color: "#92400e",
-  },
-  error: {
-    background: "#fef2f2",
-    border: "#fecaca",
-    color: "#b91c1c",
-  },
-  success: {
-    background: "#f0fdf4",
-    border: "#bbf7d0",
-    color: "#166534",
-  },
+  info: { background: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
+  warning: { background: "#fffbeb", border: "#fde68a", color: "#92400e" },
+  error: { background: "#fef2f2", border: "#fecaca", color: "#b91c1c" },
+  success: { background: "#f0fdf4", border: "#bbf7d0", color: "#166534" },
 };
 
 function NotificationBanner({ type = "info", message, style = {} }) {
@@ -67,44 +53,31 @@ function NotificationBanner({ type = "info", message, style = {} }) {
         ...style,
       }}
     >
-      <span style={{ flexShrink: 0, marginTop: 1 }}>•</span>
+      <span style={{ flexShrink: 0, marginTop: 1 }}>*</span>
       <span>{message}</span>
     </div>
   );
 }
 
 function NotificationMenuView() {
-  const [open, setOpen]                   = useState(false);
-  const [selected, setSelected]           = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const menuRef                           = useRef(null);
+  const toast = useToast();
+  const menuRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [socketEnabled, setSocketEnabled] = useState(true);
 
-  // Read role from localStorage (replaces Redux state.auth)
-  const user       = (() => { try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; } })();
-  const token      = localStorage.getItem("token");
-  const isCaregiver = user.role?.toLowerCase() === "caregiver";
+  const { notifications, unreadCount, fetchNotifications, markNotificationRead, markAllNotificationsRead, clearNotifications } = useCounselling({
+    enableRealtime: socketEnabled,
+    toast,
+  });
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  // ── SignalR / WebSocket stub ──────────────────────────────────────────────
-  // Replace this with your real signalRService calls, same as AmniCare:
-  //   signalRService.startConnection(token)
-  //   signalRService.on("MissedVisitAlert", handler)
-  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token || !isCaregiver) return;
-    // TODO: wire up your signalRService here
-    // Example:
-    // signalRService.startConnection(token).then(() => {
-    //   signalRService.on("MissedVisitAlert", (data) => addNotification(data));
-    // });
-    // return () => signalRService.off("MissedVisitAlert");
-  }, [token, isCaregiver]);
+    fetchNotifications();
+  }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+    const handler = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
         setOpen(false);
         setSelected(null);
       }
@@ -113,65 +86,88 @@ function NotificationMenuView() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleNotificationClick = (n) => {
-    setSelected(n);
-    setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, isRead: true } : x));
+  const handleNotificationClick = async (notification) => {
+    setSelected(notification);
+    if (!notification.isRead) {
+      await markNotificationRead(notification._id);
+    }
   };
 
-  const handleMarkAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const handleClear = async () => {
+    await markAllNotificationsRead();
+  };
 
-  const handleDelete = (id, e) => {
-    e.stopPropagation();
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const handleClearAll = async () => {
+    await clearNotifications();
+    setSelected(null);
   };
 
   return (
     <div className="position-relative" ref={menuRef}>
-
-      {/* ── Bell button ── */}
       <button
-        onClick={() => { setOpen(o => !o); setSelected(null); }}
+        onClick={() => {
+          setOpen((value) => !value);
+          setSelected(null);
+        }}
         style={{
-          background: "none", border: "none", cursor: "pointer",
-          position: "relative", padding: 6, color: "#64748b",
-          display: "flex", alignItems: "center", borderRadius: 8,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          position: "relative",
+          padding: 6,
+          color: "#64748b",
+          display: "flex",
+          alignItems: "center",
+          borderRadius: 8,
           transition: "transform 0.15s ease",
         }}
-        onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.08)")}
-        onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
       >
         <BellIcon filled={unreadCount > 0} />
         {unreadCount > 0 && (
-          <span style={{
-            position: "absolute", top: 2, right: 2,
-            background: "#e53e3e", color: "#fff",
-            borderRadius: "50%", width: 17, height: 17,
-            fontSize: 9, fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "2px solid #fff",
-          }}>
+          <span
+            style={{
+              position: "absolute",
+              top: 2,
+              right: 2,
+              background: "#e53e3e",
+              color: "#fff",
+              borderRadius: "50%",
+              width: 17,
+              height: 17,
+              fontSize: 9,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "2px solid #fff",
+            }}
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
-      {/* ── Dropdown panel ── */}
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", right: 0,
-          width: 380, maxHeight: 480,
-          background: "#fff", borderRadius: 12,
-          border: "1px solid #e5e9f0",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
-          display: "flex", flexDirection: "column",
-          zIndex: 2000, overflow: "hidden",
-          fontFamily: "'Outfit', sans-serif",
-        }}>
-
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            width: 380,
+            maxHeight: 480,
+            background: "#fff",
+            borderRadius: 12,
+            border: "1px solid #e5e9f0",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
+            display: "flex",
+            flexDirection: "column",
+            zIndex: 2000,
+            overflow: "hidden",
+            fontFamily: "'Outfit', sans-serif",
+          }}
+        >
           {!selected ? (
-            /* ── List View ── */
             <>
-              {/* Header */}
               <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f3f7", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b" }}>Notifications</span>
@@ -181,14 +177,23 @@ function NotificationMenuView() {
                     </span>
                   )}
                 </div>
-                {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{ background: "none", border: "none", cursor: "pointer", color: "#1a6fa8", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, padding: "4px 6px", borderRadius: 6 }}>
-                    <CheckAllIcon /> Mark all read
+                <div style={{ display: "flex", gap: 8 }}>
+                  {unreadCount > 0 && (
+                    <button onClick={handleClear} style={actionButtonStyle}>
+                      <CheckAllIcon /> Mark all read
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button onClick={handleClearAll} style={actionButtonStyle}>
+                      <TrashIcon /> Clear
+                    </button>
+                  )}
+                  <button onClick={() => setSocketEnabled((value) => !value)} style={actionButtonStyle}>
+                    {socketEnabled ? "Live" : "Offline"}
                   </button>
-                )}
+                </div>
               </div>
 
-              {/* List */}
               <div style={{ overflowY: "auto", flex: 1 }}>
                 {notifications.length === 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", gap: 8 }}>
@@ -197,64 +202,53 @@ function NotificationMenuView() {
                     <span style={{ fontSize: 12, color: "#94a3b8", textAlign: "center" }}>Nothing to display right now.</span>
                   </div>
                 ) : (
-                  notifications.map((n, index) => (
-                    <div key={n.id}>
-                      <div
-                        onClick={() => handleNotificationClick(n)}
+                  notifications.map((notification, index) => (
+                    <div key={notification._id || `${notification.title}-${index}`}>
+                      <button
+                        onClick={() => handleNotificationClick(notification)}
                         style={{
-                          padding: "12px 16px", cursor: "pointer",
-                          display: "flex", gap: 10, alignItems: "flex-start",
-                          background: n.isRead ? "transparent" : "rgba(26,111,168,0.05)",
-                          borderLeft: `3px solid ${n.isRead ? "transparent" : "#1a6fa8"}`,
+                          width: "100%",
+                          padding: "12px 16px",
+                          cursor: "pointer",
+                          display: "flex",
+                          gap: 10,
+                          alignItems: "flex-start",
+                          background: notification.isRead ? "transparent" : "rgba(26,111,168,0.05)",
+                          borderLeft: `3px solid ${notification.isRead ? "transparent" : "#1a6fa8"}`,
+                          border: "none",
+                          textAlign: "left",
                           transition: "background 0.15s",
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = n.isRead ? "#fafbfc" : "rgba(26,111,168,0.09)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = n.isRead ? "transparent" : "rgba(26,111,168,0.05)")}
                       >
-                        {/* Unread dot */}
                         <div style={{ paddingTop: 4, flexShrink: 0 }}>
-                          {!n.isRead
-                            ? <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a6fa8" }} />
-                            : <div style={{ width: 8, height: 8 }} />
-                          }
+                          {!notification.isRead ? (
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a6fa8" }} />
+                          ) : (
+                            <div style={{ width: 8, height: 8 }} />
+                          )}
                         </div>
-
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                            <span style={{ fontSize: 13, fontWeight: n.isRead ? 500 : 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
-                              Missed Visit Alert
+                            <span style={{ fontSize: 13, fontWeight: notification.isRead ? 500 : 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
+                              {notification.title || "Counselling update"}
                             </span>
                             <span style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }}>
-                              {formatDate(n.alertedAt)}
+                              {formatDateTime(notification.createdAt)}
                             </span>
                           </div>
-
-                          <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
-                            <PersonIcon />
-                            <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>{n.caregiverName}</span>
-                          </div>
-
                           <span style={{ fontSize: 11, color: "#64748b", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                            {n.message}
+                            {notification.message}
                           </span>
                         </div>
-
-                        {/* Delete */}
-                        <button onClick={(e) => handleDelete(n.id, e)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 2, display: "flex", alignItems: "center", flexShrink: 0 }}>
-                          <TrashIcon />
-                        </button>
-                      </div>
+                      </button>
                       {index < notifications.length - 1 && <hr style={{ margin: "0 16px", borderColor: "#f0f3f7", opacity: 0.6 }} />}
                     </div>
                   ))
                 )}
               </div>
             </>
-
           ) : (
-            /* ── Detail View ── */
             <>
-              {/* Detail header */}
               <div style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #f0f3f7", flexShrink: 0 }}>
                 <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", padding: 4, borderRadius: 6 }}>
                   <BackIcon />
@@ -262,47 +256,18 @@ function NotificationMenuView() {
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>Notification Detail</span>
               </div>
 
-              <hr style={{ margin: 0, borderColor: "#f0f3f7" }} />
-
-              {/* Detail body */}
               <div style={{ padding: 20, overflowY: "auto" }}>
-                {/* Title + missed badge */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <span style={{ fontWeight: 700, fontSize: 15, color: "#1e293b" }}>Missed Visit Alert</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: "1px solid #fca5a5", color: "#991b1b", background: "#fff5f5" }}>Missed</span>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: "#1e293b" }}>{selected.title || "Counselling update"}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: "1px solid #cbd5e1", color: "#334155", background: "#f8fafc" }}>
+                    {selected.type || "info"}
+                  </span>
                 </div>
-
-                <hr style={{ borderColor: "#f0f3f7", marginBottom: 16 }} />
-
-                {/* Caregiver box */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 8, background: "#f8fafc", marginBottom: 16 }}>
-                  <PersonIcon />
-                  <div>
-                    <span style={{ fontSize: 11, color: "#94a3b8", display: "block", lineHeight: 1.2 }}>Caregiver</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{selected.caregiverName}</span>
-                  </div>
-                </div>
-
-                {/* Message */}
                 <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.65, marginBottom: 16 }}>{selected.message}</p>
-
-                <hr style={{ borderColor: "#f0f3f7", marginBottom: 16 }} />
-
-                {/* Time details */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {[
-                    { label: "Scheduled Start", value: formatDate(selected.scheduledStart) },
-                    { label: "Scheduled End",   value: formatDate(selected.scheduledEnd)   },
-                    { label: "Alerted At",       value: formatDate(selected.alertedAt)      },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                      <div style={{ marginTop: 2, color: "#94a3b8", flexShrink: 0 }}><ClockIcon /></div>
-                      <div>
-                        <span style={{ fontSize: 11, color: "#94a3b8", display: "block", lineHeight: 1.2 }}>{label}</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#52637a" }}>{value}</span>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ display: "grid", gap: 12 }}>
+                  <DetailLine label="Audience" value={selected.recipientRole} />
+                  <DetailLine label="Category" value={selected.category || "-"} />
+                  <DetailLine label="Created" value={formatDateTime(selected.createdAt)} />
                 </div>
               </div>
             </>
@@ -312,6 +277,29 @@ function NotificationMenuView() {
     </div>
   );
 }
+
+function DetailLine({ label, value }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 10 }}>
+      <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 13, color: "#1e293b" }}>{value || "-"}</div>
+    </div>
+  );
+}
+
+const actionButtonStyle = {
+  background: "none",
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  cursor: "pointer",
+  color: "#1a6fa8",
+  fontSize: 12,
+  fontWeight: 600,
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+  padding: "4px 8px",
+};
 
 export default function NotificationMenu(props = {}) {
   const { message, type, style } = props;

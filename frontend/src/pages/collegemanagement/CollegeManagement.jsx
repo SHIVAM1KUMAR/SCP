@@ -13,7 +13,7 @@ import {
   normalizeFollowUpStatus,
 } from "../../component/ui/studentmanagement/FollowUpStatus";
 
-export default function CollegeManagement({ scope = "default", view = "all" } = {}) {
+export default function CollegeManagement({ view = "all" } = {}) {
   const { colleges, isLoadingColleges, deleteCollege, fetchColleges, isDeletingCollege, toggleInterestAsync } = useColleges();
 
   const [search, setSearch] = useState("");
@@ -29,6 +29,7 @@ export default function CollegeManagement({ scope = "default", view = "all" } = 
   const roleLower = String(role || "").toLowerCase();
   const isStudent = roleLower === "student";
   const isStudentAppliedView = isStudent && view === "applied";
+  const followUpVariant = isStudentAppliedView ? "extended" : "basic";
   const showFollowUpColumn = isStudent;
   const showPaymentColumn = !isStudent;
   const baseCollegeRoute = roleLower === "admin"
@@ -222,7 +223,7 @@ export default function CollegeManagement({ scope = "default", view = "all" } = 
                           value={getFollowUpStatusForCollege(currentStudent, c._id, "student")}
                           loading={followUpUpdating === buildFollowUpUpdateKey(currentStudent?._id, c._id)}
                           disabled={followUpUpdating === buildFollowUpUpdateKey(currentStudent?._id, c._id)}
-                          view="student"
+                          variant={followUpVariant}
                           onChange={(nextStatus) =>
                             updateStudentFollowUpStatus(
                               currentStudent?._id,

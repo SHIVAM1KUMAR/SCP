@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import RealTimeClock from "../clock/realtimeCLock";
-//import NotificationMenu from "../notification/notificationmenu";
+import NotificationMenu from "../notification/notificationmenu";
 import ProfileMenu from "../profile/profileMenu";
 
 // ─── AppBar ───────────────────────────────────────────────────────────────────
@@ -26,14 +26,15 @@ const MenuIcon = () => (
 
 export default function AdminAppBar({ open, handleDrawerOpen }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 960);
-  const [user, setUser]         = useState({});
+  const [user]                  = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
-    // Read user from localStorage (replaces Redux state.auth)
-    try {
-      setUser(JSON.parse(localStorage.getItem("user") || "{}"));
-    } catch { setUser({}); }
-
     const handler = () => setIsMobile(window.innerWidth < 960);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
@@ -118,7 +119,7 @@ export default function AdminAppBar({ open, handleDrawerOpen }) {
       {/* ── RIGHT SECTION ── */}
       <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 14, flexShrink: 0 }}>
         {/* Notification bell */}
-        {/* <NotificationMenu /> */}
+        <NotificationMenu />
 
         {/* Profile avatar + dropdown */}
         <ProfileMenu name={name} role={role} email={email} />

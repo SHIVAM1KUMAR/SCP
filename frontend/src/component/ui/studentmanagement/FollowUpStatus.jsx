@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 const FOLLOW_UP_STATUS_META = {
   Unvisited: {
     label: "Unvisited",
@@ -15,10 +17,24 @@ const FOLLOW_UP_STATUS_META = {
   },
   Counseled: {
     label: "Counseled",
-    bg: "#f0fdf4",
+    bg: "#ecfdf5",
     border: "#bbf7d0",
     color: "#166534",
     dot: "#16a34a",
+  },
+  Rescheduled: {
+    label: "Rescheduled",
+    bg: "#eff6ff",
+    border: "#bfdbfe",
+    color: "#1d4ed8",
+    dot: "#2563eb",
+  },
+  Missed: {
+    label: "Missed",
+    bg: "#fef2f2",
+    border: "#fecaca",
+    color: "#b91c1c",
+    dot: "#dc2626",
   },
   default: {
     label: "Unvisited",
@@ -29,34 +45,42 @@ const FOLLOW_UP_STATUS_META = {
   },
 };
 
-const FOLLOW_UP_STATUS_VIEW_LABELS = {
-  student: {
-    Counseled: "Counseling Completed",
-  },
-  college: {
-    Counseled: "Counseled",
-  },
+const FOLLOW_UP_STATUS_VARIANTS = {
+  basic: ["Unvisited", "Visited"],
+  extended: ["Unvisited", "Visited", "Counseled", "Rescheduled", "Missed"],
+  counselling: ["Unvisited", "Visited", "Counseled", "Missed"],
 };
 
-export const FOLLOW_UP_STATUS_OPTIONS = [
-  "Unvisited",
-  "Visited",
-  "Counseled",
-];
+export const FOLLOW_UP_STATUS_OPTIONS = FOLLOW_UP_STATUS_VARIANTS.basic;
+
+export const FOLLOW_UP_STATUS_EXTENDED_OPTIONS = FOLLOW_UP_STATUS_VARIANTS.extended;
 
 export const normalizeFollowUpStatus = (value) => {
   const text = String(value || "").trim();
   const legacyMap = {
     unseen: "Unvisited",
     "not visited": "Unvisited",
+    counseled: "Counseled",
+    counselled: "Counseled",
+    done: "Counseled",
+    completed: "Counseled",
+    complete: "Counseled",
+    reschedule: "Rescheduled",
+    rescheduled: "Rescheduled",
+    missed: "Missed",
   };
   const legacy = legacyMap[text.toLowerCase()];
   if (legacy) return legacy;
 
-  const match = FOLLOW_UP_STATUS_OPTIONS.find(
+  const match = FOLLOW_UP_STATUS_VARIANTS.extended.find(
     (option) => option.toLowerCase() === text.toLowerCase(),
   );
   return match || "Unvisited";
+};
+
+export const collapseFollowUpStatusToBasic = (status) => {
+  const normalized = normalizeFollowUpStatus(status);
+  return normalized === "Unvisited" ? "Unvisited" : "Visited";
 };
 
 export const buildFollowUpUpdateKey = (studentId, collegeId = null) =>
@@ -73,9 +97,7 @@ export const getFollowUpStatusForCollege = (student, collegeId = null, scope = "
       ? statuses.get(String(collegeId))
       : statuses?.[String(collegeId)];
 
-    if (rawStatus) {
-      return normalizeFollowUpStatus(rawStatus);
-    }
+    if (rawStatus) return normalizeFollowUpStatus(rawStatus);
   }
 
   return "Unvisited";
@@ -85,12 +107,10 @@ function getFollowUpMeta(status) {
   return FOLLOW_UP_STATUS_META[status] || FOLLOW_UP_STATUS_META.default;
 }
 
-const getFollowUpDisplayLabel = (status, view = "college") =>
-  FOLLOW_UP_STATUS_VIEW_LABELS[view]?.[status] || getFollowUpMeta(status).label;
-
-export function FollowUpStatusBadge({ status, view = "college" }) {
+export function FollowUpStatusBadge({ status, variant = "basic" }) {
   const normalized = normalizeFollowUpStatus(status);
-  const meta = getFollowUpMeta(normalized);
+  const displayStatus = variant === "basic" ? collapseFollowUpStatusToBasic(normalized) : normalized;
+  const meta = getFollowUpMeta(displayStatus);
 
   return (
     <span
@@ -117,7 +137,7 @@ export function FollowUpStatusBadge({ status, view = "college" }) {
           display: "inline-block",
         }}
       />
-      {getFollowUpDisplayLabel(normalized, view)}
+      {getFollowUpMeta(displayStatus).label}
     </span>
   );
 }
@@ -127,10 +147,12 @@ export function FollowUpStatusSelect({
   onChange,
   disabled = false,
   loading = false,
-  view = "college",
+  variant = "basic",
 }) {
   const normalized = normalizeFollowUpStatus(value);
-  const meta = getFollowUpMeta(normalized);
+  const displayStatus = variant === "basic" ? collapseFollowUpStatusToBasic(normalized) : normalized;
+  const meta = getFollowUpMeta(displayStatus);
+  const options = FOLLOW_UP_STATUS_VARIANTS[variant] || FOLLOW_UP_STATUS_VARIANTS.basic;
 
   return (
     <div
@@ -139,7 +161,7 @@ export function FollowUpStatusSelect({
       style={{ minWidth: 160 }}
     >
       <select
-        value={normalized}
+        value={displayStatus}
         disabled={disabled || loading}
         onChange={(e) => onChange?.(e.target.value)}
         style={{
@@ -162,9 +184,9 @@ export function FollowUpStatusSelect({
           cursor: disabled || loading ? "not-allowed" : "pointer",
         }}
       >
-        {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
+        {options.map((option) => (
           <option key={option} value={option}>
-            {getFollowUpDisplayLabel(option, view)}
+            {getFollowUpMeta(option).label}
           </option>
         ))}
       </select>

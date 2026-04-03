@@ -23,7 +23,7 @@ const ALL_DOCUMENT_KEYS = [
 
 const LEGACY_STATUS_DEFAULT = "Inactive";
 const REGISTRATION_STATUS_DEFAULT = "Pending";
-const FOLLOW_UP_STATUS_VALUES = ["Unvisited", "Visited", "Counseled"];
+const FOLLOW_UP_STATUS_VALUES = ["Unvisited", "Visited", "Counseled", "Rescheduled", "Missed"];
 
 const toText = (value, fallback = "") => {
   if (value === undefined || value === null) return fallback;
@@ -251,6 +251,8 @@ const sanitizeEmail = (value) => toText(value).toLowerCase();
 const normalizeFollowUpStatus = (value) => {
   const status = toOptionalText(value);
   if (!status) return "";
+
+  if (["counseled", "counselled"].includes(status.toLowerCase())) return "Counseled";
 
   const matched = FOLLOW_UP_STATUS_VALUES.find(
     (item) => item.toLowerCase() === status.toLowerCase()

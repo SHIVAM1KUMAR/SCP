@@ -99,6 +99,7 @@ export default function BasicModal({
             display: "flex",
             flexDirection: "column",
             maxWidth: parsedMaxWidth,
+            maxHeight: "calc(100vh - 32px)",
             ...fullWidthStyle, 
             fontFamily: "'Outfit', sans-serif",
             animation: "modalFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
@@ -145,7 +146,9 @@ export default function BasicModal({
             padding:      "24px",
             borderTop:    title   ? "none" : "1px solid #f1f5f9",
             borderBottom: actions ? "1px solid #f1f5f9" : "none",
-            overflowY:    "hidden",
+            overflowY:    "auto",
+            minHeight:    0,
+            flex:         "1 1 auto",
             maxHeight:    "none",
           }}>
             {children}

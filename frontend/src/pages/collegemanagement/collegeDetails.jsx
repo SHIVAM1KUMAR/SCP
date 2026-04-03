@@ -11,7 +11,7 @@ import CollegeRegistrationForm from "../../component/forms/college/CollegeRegist
 import DeleteCollegeModal from "./deletecollegeModal";
 import ActivateCollegeModal from "./activateCollege";
 import { getAuth } from "../../store/slice/auth.slice";
-import { getFollowUpStatusForCollege } from "../../component/ui/studentmanagement/FollowUpStatus";
+import { collapseFollowUpStatusToBasic, getFollowUpStatusForCollege } from "../../component/ui/studentmanagement/FollowUpStatus";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const FILE_BASE_URL = BASE_URL.replace(/\/api\/?$/, "");
@@ -208,6 +208,8 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
     student: currentStudent,
     updateStudentFollowUpStatus,
   } = useStudents(studentLookupId);
+  const currentStudentId = currentStudent?._id || null;
+  const studentFollowUpStatuses = currentStudent?.studentFollowUpStatuses;
 
   const college = collegeResponse?.data?.data || collegeResponse?.data || collegeResponse || {};
 
@@ -223,26 +225,29 @@ export default function CollegeDetails({ collegeId: collegeIdProp = null, embedd
   const showStudentBackAction = !embedded && isStudent;
 
   useEffect(() => {
-    if (!isStudent || embedded || !currentStudent?._id) return;
+    if (!isStudent || embedded || !currentStudentId) return;
 
-    const normalizedStatus = getFollowUpStatusForCollege(currentStudent, collegeId, "student");
+    const normalizedStatus = collapseFollowUpStatusToBasic(getFollowUpStatusForCollege(
+      { studentFollowUpStatuses },
+      collegeId,
+      "student",
+    ));
     const shouldMarkVisited =
-      normalizedStatus !== "Visited" &&
-      normalizedStatus !== "Counseled" &&
-      autoMarkedVisitedRef.current !== currentStudent._id;
+      normalizedStatus === "Unvisited" &&
+      autoMarkedVisitedRef.current !== currentStudentId;
 
     if (!shouldMarkVisited) return;
 
-    autoMarkedVisitedRef.current = currentStudent._id;
-    void updateStudentFollowUpStatus(currentStudent._id, "Visited", collegeId, "student").catch(() => {
+    autoMarkedVisitedRef.current = currentStudentId;
+    void updateStudentFollowUpStatus(currentStudentId, "Visited", collegeId, "student").catch(() => {
       autoMarkedVisitedRef.current = null;
     });
   }, [
     embedded,
     isStudent,
     collegeId,
-    currentStudent?._id,
-    currentStudent?.studentFollowUpStatuses,
+    currentStudentId,
+    studentFollowUpStatuses,
     updateStudentFollowUpStatus,
   ]);
 
