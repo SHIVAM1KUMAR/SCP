@@ -1,15 +1,54 @@
 import { useEffect, useState } from "react";
-import {
-  getStudents,
-  getStudentById,
-  addStudent,
-  updateStudent,
-  deleteStudent as apiDeleteStudent,
-  activateStudent as apiActivateStudent,
-  approveStudent as apiApproveStudent,
-  rejectStudent as apiRejectStudent,
-  updateStudentFollowUpStatus as apiUpdateStudentFollowUpStatus,
-} from "../api/studentApi";
+import axiosInstance from "../api/axiosInstance";
+
+const getStudents = async () => {
+  const { data } = await axiosInstance.get("/students");
+  return data;
+};
+
+const getStudentById = async (id) => {
+  const { data } = await axiosInstance.get(`/students/${id}`);
+  return data;
+};
+
+const addStudent = async (studentData) => {
+  const { data } = await axiosInstance.post("/students", studentData);
+  return data;
+};
+
+const updateStudent = async (id, studentData) => {
+  const { data } = await axiosInstance.put(`/students/${id}`, studentData);
+  return data;
+};
+
+const deleteStudent = async (id) => {
+  const { data } = await axiosInstance.delete(`/students/${id}`);
+  return data;
+};
+
+const activateStudent = async (id) => {
+  const { data } = await axiosInstance.post(`/students/${id}/activate`);
+  return data;
+};
+
+const approveStudent = async (id) => {
+  const { data } = await axiosInstance.post(`/students/${id}/approve`);
+  return data;
+};
+
+const rejectStudent = async (id) => {
+  const { data } = await axiosInstance.post(`/students/${id}/reject`);
+  return data;
+};
+
+const updateStudentFollowUpStatus = async (id, followUpStatus, collegeId = null, scope = "student") => {
+  const { data } = await axiosInstance.put(`/students/${id}/follow-up-status`, {
+    followUpStatus,
+    collegeId,
+    scope,
+  });
+  return data;
+};
 
 export function useStudents(studentId = null, toast = () => {}) {
   const [students, setStudents] = useState([]);
@@ -108,7 +147,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     const targetId = extractId(id);
     setDeleting(targetId);
     try {
-      const data = await apiDeleteStudent(targetId);
+      const data = await deleteStudent(targetId);
       toast(data?.message || "Student deleted", "warning");
       await fetchStudents();
       if (studentId && String(studentId) === String(targetId)) {
@@ -132,7 +171,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     const targetId = extractId(id);
     setActivating(targetId);
     try {
-      const data = await apiActivateStudent(targetId);
+      const data = await activateStudent(targetId);
       toast(data?.message || "Student activated", "success");
       await fetchStudents();
       if (isDetailMode) {
@@ -151,7 +190,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     const targetId = extractId(id);
     setApproving(targetId);
     try {
-      const data = await apiApproveStudent(targetId);
+      const data = await approveStudent(targetId);
       toast(data?.message || "Student approved", "success");
       await fetchStudents();
       if (isDetailMode) {
@@ -170,7 +209,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     const targetId = extractId(id);
     setRejecting(targetId);
     try {
-      const data = await apiRejectStudent(targetId);
+      const data = await rejectStudent(targetId);
       toast(data?.message || "Student rejected", "warning");
       await fetchStudents();
       if (isDetailMode) {
@@ -190,7 +229,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     const updateKey = buildFollowUpUpdateKey(targetId, collegeId);
     setFollowUpUpdating(updateKey);
     try {
-      const data = await apiUpdateStudentFollowUpStatus(targetId, followUpStatus, collegeId, scope);
+      const data = await updateStudentFollowUpStatus(targetId, followUpStatus, collegeId, scope);
       toast(data?.message || "Student status updated", "success");
       await fetchStudents();
       if (isDetailMode) {

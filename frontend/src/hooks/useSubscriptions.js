@@ -1,11 +1,41 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  addSubscription,
-  deleteSubscription as apiDeleteSubscription,
-  getSubscriptionById,
-  getSubscriptions,
-  updateSubscription,
-} from "../api/subscriptionApi";
+import axiosInstance from "../api/axiosInstance";
+
+const toQueryString = (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, value);
+    }
+  });
+  const value = query.toString();
+  return value ? `?${value}` : "";
+};
+
+const getSubscriptions = async (params = {}) => {
+  const { data } = await axiosInstance.get(`/subscriptions${toQueryString(params)}`);
+  return data;
+};
+
+const getSubscriptionById = async (id) => {
+  const { data } = await axiosInstance.get(`/subscriptions/${id}`);
+  return data;
+};
+
+const addSubscription = async (subscriptionData) => {
+  const { data } = await axiosInstance.post("/subscriptions", subscriptionData);
+  return data;
+};
+
+const updateSubscription = async (id, subscriptionData) => {
+  const { data } = await axiosInstance.put(`/subscriptions/${id}`, subscriptionData);
+  return data;
+};
+
+const deleteSubscription = async (id) => {
+  const { data } = await axiosInstance.delete(`/subscriptions/${id}`);
+  return data;
+};
 
 export function useSubscriptions(subscriptionId = null, toast = () => {}) {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -81,7 +111,7 @@ export function useSubscriptions(subscriptionId = null, toast = () => {}) {
   const deleteSubscriptionAsync = async (id) => {
     setDeleting(id);
     try {
-      const data = await apiDeleteSubscription(id);
+      const data = await deleteSubscription(id);
       await fetchSubscriptions();
       if (isDetailMode && String(subscriptionId) === String(id)) {
         setSubscription(null);
