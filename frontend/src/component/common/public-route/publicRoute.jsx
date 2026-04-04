@@ -18,7 +18,7 @@ export const PublicRoute = () => {
     const role = user.role || "";
     if (role === "SuperAdmin") return <Navigate to="/superadmin/college" replace />;
     if (role === "Admin")      return <Navigate to="/admin/college"      replace />;
-    return                            <Navigate to="/user/admissions"    replace />;
+    return                            <Navigate to="/student/admissions" replace />;
   }
 
   return <Outlet />;

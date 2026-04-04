@@ -13,7 +13,9 @@ import {
   rejectStudent,
   activateStudent,
   updateStudentFollowUpStatus,
+  updateStudentAdmissionStatus,
 } from "../../controllers/student/studentController.js";
+import { protect } from "../../middleware/auth.js";
 
 const router = express.Router();
 
@@ -65,6 +67,7 @@ const uploadStudentDocuments = upload.fields([
 ]);
 
 router.get("/", getStudents);
+router.put("/:id/admission-status", protect, updateStudentAdmissionStatus);
 router.get("/:id", getStudentById);
 router.post("/", uploadStudentDocuments, addStudent);
 router.put("/:id", uploadStudentDocuments, updateStudent);

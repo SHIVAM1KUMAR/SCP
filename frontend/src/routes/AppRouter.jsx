@@ -21,6 +21,8 @@ import CounsellingStudent from "../pages/counsellingmanagement/CounsellingStuden
 import CounsellingStudentSessionDetails from "../pages/counsellingmanagement/CounsellingStudentSessionDetails";
 import CounsellingCounsellorDetails from "../pages/counsellingmanagement/CounsellingCounsellorDetails";
 import CounsellingSessionDetails from "../pages/counsellingmanagement/CounsellingSessionDetails";
+import StudentAdmissions from "../pages/admissions/StudentAdmissions";
+import SuperAdminAdmissions from "../pages/admissions/SuperAdminAdmissions";
 
 const ROLE_ROUTES = {
   SuperAdmin: [
@@ -31,6 +33,7 @@ const ROLE_ROUTES = {
     { path: "students/:id", element: <StudentDetails /> },
     { path: "counselling", element: <CounsellingSuperAdmin /> },
     { path: "counselling/:id", element: <CounsellingCounsellorDetails /> },
+    { path: "admissions", element: <SuperAdminAdmissions /> },
     { path: "subscriptions", element: <SubscriptionManagement /> },
     { path: "payments", element: <Payments /> },
     { path: "account-settings", element: <AccountSettings /> },
@@ -60,11 +63,11 @@ const ROLE_ROUTES = {
     { index: true, element: <Navigate to="colleges" replace /> },
     { path: "colleges", element: <CollegeManagement /> },
     { path: "colleges/:id", element: <CollegeDetails /> },
-    { path: "applied-colleges", element: <CollegeManagement scope="student" view="applied" /> },
+    { path: "admissions", element: <StudentAdmissions /> },
+    { path: "applied-colleges", element: <Navigate to="admissions" replace /> },
     { path: "applied-colleges/:id", element: <CollegeDetails /> },
     { path: "counselling", element: <CounsellingStudent /> },
     { path: "counselling/:id", element: <CounsellingStudentSessionDetails /> },
-    { path: "admissions", element: <Navigate to="applied-colleges" replace /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
 };

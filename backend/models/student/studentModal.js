@@ -66,6 +66,11 @@ const studentSchema = new mongoose.Schema(
 
     password: { type: String, default: "" },
     interestedColleges: [{ type: mongoose.Schema.Types.ObjectId, ref: "College" }],
+    admissionStatuses: {
+      type: Map,
+      of: String,
+      default: {},
+    },
     collegeFollowUpStatuses: {
       type: Map,
       of: String,

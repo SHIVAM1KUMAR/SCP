@@ -24,6 +24,7 @@ const ALL_DOCUMENT_KEYS = [
 const LEGACY_STATUS_DEFAULT = "Inactive";
 const REGISTRATION_STATUS_DEFAULT = "Pending";
 const FOLLOW_UP_STATUS_VALUES = ["Unvisited", "Visited", "Counseled", "Rescheduled", "Missed"];
+const ADMISSION_STATUS_VALUES = ["Pending", "Admitted", "Not Admitted"];
 
 const toText = (value, fallback = "") => {
   if (value === undefined || value === null) return fallback;
@@ -149,6 +150,10 @@ const attachStudentViews = (student) => {
     obj.studentFollowUpStatuses instanceof Map
       ? Object.fromEntries(obj.studentFollowUpStatuses.entries())
       : { ...(obj.studentFollowUpStatuses || {}) };
+  const admissionStatuses =
+    obj.admissionStatuses instanceof Map
+      ? Object.fromEntries(obj.admissionStatuses.entries())
+      : { ...(obj.admissionStatuses || {}) };
 
   return {
     ...obj,
@@ -158,6 +163,7 @@ const attachStudentViews = (student) => {
     documentFiles,
     collegeFollowUpStatuses,
     studentFollowUpStatuses,
+    admissionStatuses,
   };
 };
 
@@ -258,6 +264,33 @@ const normalizeFollowUpStatus = (value) => {
     (item) => item.toLowerCase() === status.toLowerCase()
   );
   return matched || "";
+};
+
+const normalizeAdmissionStatus = (value) => {
+  const status = toOptionalText(value);
+  if (!status) return "Pending";
+
+  const legacyMap = {
+    yes: "Admitted",
+    admitted: "Admitted",
+    taken: "Admitted",
+    true: "Admitted",
+    no: "Not Admitted",
+    "not admitted": "Not Admitted",
+    notadmitted: "Not Admitted",
+    false: "Not Admitted",
+    pending: "Pending",
+    undecided: "Pending",
+    unknown: "Pending",
+  };
+
+  const legacy = legacyMap[status.toLowerCase()];
+  if (legacy) return legacy;
+
+  const matched = ADMISSION_STATUS_VALUES.find(
+    (item) => item.toLowerCase() === status.toLowerCase()
+  );
+  return matched || "Pending";
 };
 
 // Fetch all students
@@ -555,5 +588,59 @@ export const updateStudentFollowUpStatus = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const updateStudentAdmissionStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const student = await Student.findById(id);
+
+    if (!student || student.isDeleted) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    const routeStudentId = toOptionalText(req.user?.id);
+    const role = toText(req.user?.role).toLowerCase();
+
+    if (role !== "student" || (routeStudentId && String(routeStudentId) !== String(id))) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    const collegeId = toOptionalText(req.body?.collegeId);
+    const nextStatus = normalizeAdmissionStatus(req.body?.admissionStatus);
+
+    if (!collegeId) {
+      return res.status(400).json({ success: false, message: "College ID is required" });
+    }
+
+    const appliedCollegeIds = (student.interestedColleges || []).map((college) =>
+      String(college?._id || college)
+    );
+
+    if (!appliedCollegeIds.includes(String(collegeId))) {
+      return res.status(400).json({
+        success: false,
+        message: "College not found in the student's applied colleges",
+      });
+    }
+
+    const admissionStatuses =
+      student.admissionStatuses instanceof Map
+        ? student.admissionStatuses
+        : new Map(Object.entries(student.admissionStatuses || {}));
+
+    admissionStatuses.set(String(collegeId), nextStatus);
+    student.admissionStatuses = admissionStatuses;
+
+    await student.save();
+
+    return res.json({
+      success: true,
+      message: "Admission status updated successfully",
+      data: attachStudentViews(student),
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };

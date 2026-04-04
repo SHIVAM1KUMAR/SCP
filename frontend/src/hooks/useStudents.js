@@ -50,6 +50,14 @@ const updateStudentFollowUpStatus = async (id, followUpStatus, collegeId = null,
   return data;
 };
 
+const updateStudentAdmissionStatus = async (id, admissionStatus, collegeId = null) => {
+  const { data } = await axiosInstance.put(`/students/${id}/admission-status`, {
+    admissionStatus,
+    collegeId,
+  });
+  return data;
+};
+
 export function useStudents(studentId = null, toast = () => {}) {
   const [students, setStudents] = useState([]);
   const [student, setStudent] = useState(null);
@@ -61,6 +69,7 @@ export function useStudents(studentId = null, toast = () => {}) {
   const [approving, setApproving] = useState(null);
   const [rejecting, setRejecting] = useState(null);
   const [followUpUpdating, setFollowUpUpdating] = useState(null);
+  const [admissionUpdating, setAdmissionUpdating] = useState(null);
 
   const isDetailMode = !!studentId;
   const extractId = (value) => (value && typeof value === "object" ? value.id || value._id : value);
@@ -244,6 +253,27 @@ export function useStudents(studentId = null, toast = () => {}) {
     }
   };
 
+  const updateStudentAdmissionStatusAsync = async (id, admissionStatus, collegeId = null) => {
+    const targetId = extractId(id);
+    const updateKey = buildFollowUpUpdateKey(targetId, collegeId);
+    setAdmissionUpdating(updateKey);
+    try {
+      const data = await updateStudentAdmissionStatus(targetId, admissionStatus, collegeId);
+      toast(data?.message || "Admission status updated", "success");
+      if (isDetailMode) {
+        await fetchStudent(studentId);
+      } else {
+        await fetchStudents();
+      }
+      return data;
+    } catch (err) {
+      toast(err?.response?.data?.message || err?.message || "Failed to update admission status", "error");
+      return null;
+    } finally {
+      setAdmissionUpdating(null);
+    }
+  };
+
   return {
     students,
     student,
@@ -255,6 +285,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     approving,
     rejecting,
     followUpUpdating,
+    admissionUpdating,
     isLoadingStudents: loading,
     isStudentLoading: studentLoading,
     isDeletingStudent: !!deleting,
@@ -262,6 +293,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     isApprovingStudent: !!approving,
     isRejectingStudent: !!rejecting,
     isUpdatingStudentFollowUpStatus: !!followUpUpdating,
+    isUpdatingStudentAdmissionStatus: !!admissionUpdating,
     buildFollowUpUpdateKey,
     fetchStudents,
     fetchStudent,
@@ -277,5 +309,7 @@ export function useStudents(studentId = null, toast = () => {}) {
     rejectStudentAsync,
     updateStudentFollowUpStatus: updateStudentFollowUpStatusAsync,
     updateStudentFollowUpStatusAsync,
+    updateStudentAdmissionStatus: updateStudentAdmissionStatusAsync,
+    updateStudentAdmissionStatusAsync,
   };
 }
