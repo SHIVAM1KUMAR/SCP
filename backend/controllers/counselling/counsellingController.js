@@ -294,8 +294,11 @@ export const createCounsellor = async (req, res) => {
 
 export const updateCounsellor = async (req, res) => {
   try {
-    if (normalizeRole(req.user?.role) !== "college") {
-      return res.status(403).json({ success: false, message: "Only college users can manage counsellors" });
+    const role = normalizeRole(req.user?.role);
+    const isCollege = role === "college";
+    const isCounsellor = role === "counsellor";
+    if (!isCollege && !isCounsellor) {
+      return res.status(403).json({ success: false, message: "Only college or counsellor users can manage counsellors" });
     }
 
     const collegeId = getCollegeId(req);
@@ -310,6 +313,10 @@ export const updateCounsellor = async (req, res) => {
     });
     if (!counsellor) {
       return res.status(404).json({ success: false, message: "Counsellor not found" });
+    }
+
+    if (isCounsellor && String(getCounsellorId(req)) !== String(counsellor._id)) {
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
     const nextEmail = String(req.body.email || counsellor.email).trim().toLowerCase();

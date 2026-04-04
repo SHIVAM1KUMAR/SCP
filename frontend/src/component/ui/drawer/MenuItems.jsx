@@ -119,6 +119,7 @@ const ALL_MENU_ITEMS = {
 
   Student: [
     { moduleId: 1, label: "College List",    icon: Icons.College,   path: "/student/colleges" },
+    { moduleId: 13, label: "Applied Colleges", icon: Icons.Admission, path: "/student/applied-colleges" },
     { moduleId: 4, label: "Admissions", icon: Icons.Admission, path: "/student/admissions" },
     { moduleId: 14, label: "Counselling",     icon: Icons.Counselling, path: "/student/counselling" },
     { moduleId: 15, label: "Your Tests Scheduled", icon: Icons.Tests, path: "/student/tests" },

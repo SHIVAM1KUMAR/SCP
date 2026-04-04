@@ -3,6 +3,7 @@ import StudentDetails from "../studentmanagement/studentDetails";
 import CollegeDetails from "../collegemanagement/collegeDetails";
 import SuperAdminProfile from "../../component/ui/profile/superAdmin/superAdminProfile";
 import ChangePasswordForm from "../../component/forms/account/ChangePasswordForm";
+import CounsellingCounsellorDetails from "../counsellingmanagement/CounsellingCounsellorDetails";
 
 const Icons = {
   Profile: (
@@ -181,7 +182,9 @@ export default function AccountSettings() {
   const isStudent = roleLower === "student";
   const isCollege = roleLower === "college";
   const isSuperAdmin = roleLower === "superadmin";
+  const isCounsellor = roleLower === "counsellor";
   const collegeAccountId = id || userMasterId || user.collegeId || null;
+  const counsellorAccountId = id || userMasterId || user.counsellorId || null;
 
   const tabs = useMemo(
     () => [
@@ -192,6 +195,11 @@ export default function AccountSettings() {
         content: isStudent ? (
           <StudentDetails
             studentId={id || userMasterId || user.studentId}
+            embedded
+          />
+        ) : isCounsellor ? (
+          <CounsellingCounsellorDetails
+            counsellorId={counsellorAccountId}
             embedded
           />
         ) : isCollege ? (

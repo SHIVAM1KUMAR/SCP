@@ -19,7 +19,7 @@ export const PublicRoute = () => {
     if (role === "SuperAdmin") return <Navigate to="/superadmin/college" replace />;
     if (role === "Admin")      return <Navigate to="/admin/college"      replace />;
     if (role === "Counsellor") return <Navigate to="/college/counselling/schedule" replace />;
-    return                            <Navigate to="/student/admissions" replace />;
+    return                            <Navigate to="/student/colleges" replace />;
   }
 
   return <Outlet />;
