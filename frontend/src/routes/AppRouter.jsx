@@ -28,6 +28,8 @@ import TestStudentDetails from "../pages/testmanagement/TestStudentDetails";
 import TestAttempt from "../pages/testmanagement/TestAttempt";
 import Results from "../pages/resultmanagement/Results";
 import ResultDetails from "../pages/resultmanagement/ResultDetails";
+import SupportManagement from "../pages/supportmanagement/SupportManagement";
+import SupportDetails from "../pages/supportmanagement/SupportDetails";
 import StudentAdmissions from "../pages/admissions/StudentAdmissions";
 import SuperAdminAdmissions from "../pages/admissions/SuperAdminAdmissions";
 
@@ -42,6 +44,8 @@ const ROLE_ROUTES = {
     { path: "counselling/:id", element: <CounsellingCounsellorDetails /> },
     { path: "results", element: <Results /> },
     { path: "results/:id", element: <ResultDetails /> },
+    { path: "support", element: <SupportManagement /> },
+    { path: "support/:id", element: <SupportDetails /> },
     { path: "admissions", element: <SuperAdminAdmissions /> },
     { path: "subscriptions", element: <SubscriptionManagement /> },
     { path: "payments", element: <Payments /> },
@@ -70,6 +74,8 @@ const ROLE_ROUTES = {
     { path: "tests/:id", element: <TestDetails /> },
     { path: "results", element: <Results /> },
     { path: "results/:id", element: <ResultDetails /> },
+    { path: "support", element: <SupportManagement /> },
+    { path: "support/:id", element: <SupportDetails /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
   Student: [
@@ -86,6 +92,8 @@ const ROLE_ROUTES = {
     { path: "tests/:id/attempt", element: <TestAttempt /> },
     { path: "results", element: <Results /> },
     { path: "results/:id", element: <ResultDetails /> },
+    { path: "support", element: <SupportManagement /> },
+    { path: "support/:id", element: <SupportDetails /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
 };
@@ -147,6 +155,8 @@ const AppRouter = () => {
                   "tests/:id",
                   "results",
                   "results/:id",
+                  "support",
+                  "support/:id",
                 ]);
 
                 if (route.index) {

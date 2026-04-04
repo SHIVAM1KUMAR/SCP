@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DrawerHeader } from "./drawerHeader";
 import { getMenuByRole } from "./MenuItems";
+import { useSupport } from "../../../hooks/useSupport";
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 // Logo import removed — using text logo instead to avoid missing asset error
@@ -15,7 +16,7 @@ const ChevronRight = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentC
 const ChevronDown  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={14} height={14}><polyline points="6 9 12 15 18 9" /></svg>;
 const ChevronUp    = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={14} height={14}><polyline points="18 15 12 9 6 15" /></svg>;
 
-function SidebarItem({ item, open, level = 0, onNavigate }) {
+function SidebarItem({ item, open, level = 0, onNavigate, badgeCount = 0 }) {
   const location    = useLocation();
   const [childOpen, setChildOpen] = useState(false);
   const hasChildren = !!item.children?.length;
@@ -65,6 +66,22 @@ function SidebarItem({ item, open, level = 0, onNavigate }) {
       >
         <span style={{ flexShrink: 0, opacity: isActive ? 1 : 0.8 }}>{item.icon}</span>
         {open && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>}
+        {open && badgeCount > 0 && (
+          <span
+            style={{
+              marginLeft: 8,
+              flexShrink: 0,
+              background: "#ef4444",
+              color: "#fff",
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 700,
+              padding: "2px 7px",
+            }}
+          >
+            {badgeCount > 9 ? "9+" : badgeCount}
+          </span>
+        )}
         {open && hasChildren && (
           <span style={{ flexShrink: 0, opacity: 0.7 }}>
             {childOpen ? <ChevronUp /> : <ChevronDown />}
@@ -83,7 +100,7 @@ function SidebarItem({ item, open, level = 0, onNavigate }) {
   );
 }
 
-function SidebarContent({ open, handleDrawerClose, handleDrawerOpen, menuItems, onNavigate }) {
+function SidebarContent({ open, handleDrawerClose, handleDrawerOpen, menuItems, onNavigate, badgeMap = {} }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
@@ -126,7 +143,7 @@ function SidebarContent({ open, handleDrawerClose, handleDrawerOpen, menuItems, 
 
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", paddingTop: 8 }}>
         {menuItems.map(item => (
-          <SidebarItem key={item.moduleId} item={item} open={open} onNavigate={onNavigate} />
+          <SidebarItem key={item.moduleId} item={item} open={open} onNavigate={onNavigate} badgeCount={badgeMap[item.moduleId] || 0} />
         ))}
       </nav>
     </div>
@@ -136,6 +153,11 @@ function SidebarContent({ open, handleDrawerClose, handleDrawerOpen, menuItems, 
 export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 960);
+  const { alertCount: supportAlertCount, fetchAlertCount } = useSupport({
+    enableRealtime: true,
+    loadTickets: false,
+    loadAlerts: true,
+  });
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 960);
@@ -145,6 +167,13 @@ export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
 
   const user      = (() => { try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; } })();
   const menuItems = getMenuByRole(user.role);
+  const badgeMap = String(user.role || "").toLowerCase() === "superadmin" ? { 17: supportAlertCount } : {};
+
+  useEffect(() => {
+    if (String(user.role || "").toLowerCase() === "superadmin") {
+      void fetchAlertCount?.();
+    }
+  }, [fetchAlertCount, user.role]);
 
   const handleNavigation = (path) => {
     navigate(path || "/");
@@ -175,7 +204,7 @@ export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
           <div onClick={handleDrawerClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1199 }} />
         )}
         <div style={{ ...sidebarStyle, width: DRAWER_WIDTH, transform: open ? "translateX(0)" : `translateX(-${DRAWER_WIDTH}px)`, transition: "transform 0.25s ease" }}>
-          <SidebarContent open={true} handleDrawerClose={handleDrawerClose} menuItems={menuItems} onNavigate={handleNavigation} />
+          <SidebarContent open={true} handleDrawerClose={handleDrawerClose} menuItems={menuItems} onNavigate={handleNavigation} badgeMap={badgeMap} />
         </div>
       </>
     );
@@ -188,7 +217,7 @@ export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
         if (!open && handleDrawerOpen) handleDrawerOpen();
       }}
     >
-      <SidebarContent open={open} handleDrawerClose={handleDrawerClose} handleDrawerOpen={handleDrawerOpen} menuItems={menuItems} onNavigate={handleNavigation} />
+      <SidebarContent open={open} handleDrawerClose={handleDrawerClose} handleDrawerOpen={handleDrawerOpen} menuItems={menuItems} onNavigate={handleNavigation} badgeMap={badgeMap} />
     </div>
   );
 }

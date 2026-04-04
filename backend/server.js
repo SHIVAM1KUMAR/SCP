@@ -14,6 +14,7 @@ import subscriptionRoutes from "./routes/subscription/subscriptionRoutes.js";
 import counsellingRoutes from "./routes/counselling/counsellingRoutes.js";
 import testRoutes from "./routes/tests/testRoutes.js";
 import resultRoutes from "./routes/results/resultRoutes.js";
+import supportRoutes from "./routes/support/supportRoutes.js";
 
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -59,6 +60,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/counselling", counsellingRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/support", supportRoutes);
 
 app.set("io", io);
 
@@ -86,6 +88,25 @@ io.on("connection", (socket) => {
 
     if (normalizedRole === "student" && studentId) {
       socket.join(`counselling:student:${studentId}`);
+    }
+  });
+
+  socket.on("join_support", (data = {}) => {
+    const { role, collegeId, studentId } = data;
+    const normalizedRole = String(role || "").toLowerCase();
+
+    if (normalizedRole === "superadmin") {
+      socket.join("support:superadmin");
+      return;
+    }
+
+    if (normalizedRole === "college" && collegeId) {
+      socket.join(`support:college:${collegeId}`);
+      return;
+    }
+
+    if (normalizedRole === "student" && studentId) {
+      socket.join(`support:student:${studentId}`);
     }
   });
 

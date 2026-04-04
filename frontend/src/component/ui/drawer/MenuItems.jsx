@@ -75,6 +75,12 @@ export const Icons = {
       <path d="M8 13l2 2 4-5" />
     </svg>
   ),
+  Support: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={18} height={18}>
+      <path d="M12 3a9 9 0 00-9 9v3a3 3 0 003 3h1v-7H5a7 7 0 0114 0h-2v7h2a3 3 0 003-3v-3a9 9 0 00-9-9z" />
+      <path d="M9 21h6" />
+    </svg>
+  ),
   Results: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={18} height={18}>
       <path d="M4 20h16" />
@@ -98,6 +104,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 10, label: "Payments",            icon: Icons.Reports,   path: "/superadmin/payments"   },
     { moduleId: 14, label: "Counselling",         icon: Icons.Counselling, path: "/superadmin/counselling" },
     { moduleId: 16, label: "Results",             icon: Icons.Results,   path: "/superadmin/results"    },
+    { moduleId: 17, label: "Support",             icon: Icons.Support,   path: "/superadmin/support"    },
     { moduleId: 4, label: "Admissions",           icon: Icons.Admission, path: "/superadmin/admissions" },
     {
       moduleId: 5, label: "User Management", icon: Icons.Users, path: "/superadmin/users",
@@ -123,6 +130,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 14, label: "Counselling",     icon: Icons.Counselling, path: "/student/counselling" },
     { moduleId: 15, label: "Your Tests Scheduled", icon: Icons.Tests, path: "/student/tests" },
     { moduleId: 16, label: "Results", icon: Icons.Results, path: "/student/results" },
+    { moduleId: 17, label: "Support", icon: Icons.Support, path: "/student/support" },
   ],
 
   College: [
@@ -132,6 +140,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 14, label: "Schedule Counselling", icon: Icons.Counselling, path: "/college/counselling/schedule" },
     { moduleId: 15, label: "Schedule Test", icon: Icons.Tests, path: "/college/tests" },
     { moduleId: 16, label: "Results", icon: Icons.Results, path: "/college/results" },
+    { moduleId: 17, label: "Support", icon: Icons.Support, path: "/college/support" },
   ],
 
   Counsellor: [
@@ -151,6 +160,7 @@ const ENABLED_MODULE_IDS = [
   14,  // Counselling
   15,  // Test Schedule
   16,  // Results
+  17,  // Support
   4,   // Student applied colleges
   // 5,   // User Management
   // 6,   // Reports
