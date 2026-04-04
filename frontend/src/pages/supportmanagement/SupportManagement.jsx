@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../../component/ui/button/Button";
+import BasicModal from "../../component/ui/modal/basicModal";
 import Loader from "../../component/ui/loader/Loader";
 import Search from "../../component/ui/search/Search";
 import BasicTable from "../../component/ui/table/basicTable";
@@ -103,6 +105,7 @@ export default function SupportManagement() {
       const created = await createSupportTicket(payload);
       if (created) {
         setPage(1);
+        setShowForm(false);
       }
     } finally {
       setSubmitting(false);
@@ -166,9 +169,9 @@ export default function SupportManagement() {
               <h2 style={titleStyle}>Support</h2>
               <p style={subTitleStyle}>Raise a support issue and track the status as it is handled.</p>
             </div>
-            <button onClick={() => setShowForm((value) => !value)} style={toggleButtonStyle}>
-              {showForm ? "Hide Ticket Form" : "Raise Ticket"}
-            </button>
+            <Button variant="primary" size="medium" onClick={() => setShowForm(true)}>
+              Raise Ticket
+            </Button>
           </div>
 
           <div style={{ padding: "0 20px 18px" }}>
@@ -183,11 +186,14 @@ export default function SupportManagement() {
             </div>
           </div>
 
-          {showForm && (
-            <div style={{ padding: "0 20px 20px" }}>
-              <SupportTicketForm onSubmit={handleCreateTicket} loading={submitting} />
-            </div>
-          )}
+          <BasicModal
+            open={showForm}
+            onClose={() => setShowForm(false)}
+            title="Raise Support Ticket"
+            maxWidth="lg"
+          >
+            <SupportTicketForm onSubmit={handleCreateTicket} loading={submitting} />
+          </BasicModal>
         </div>
       )}
 
@@ -313,16 +319,6 @@ const headerStyle = {
 const titleStyle = { margin: 0, fontSize: 18, fontWeight: 700, color: "#0f2044" };
 const subTitleStyle = { margin: "2px 0 0", fontSize: 12.5, color: "#64748b", fontWeight: 500 };
 const toolbarStyle = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" };
-const toggleButtonStyle = {
-  height: 36,
-  padding: "0 14px",
-  borderRadius: 8,
-  border: "1px solid #dbe3ef",
-  background: "#fff",
-  color: "#0f2044",
-  fontWeight: 700,
-  cursor: "pointer",
-};
 const contactCardStyle = {
   background: "#f8fafc",
   border: "1px solid #e5e9f0",

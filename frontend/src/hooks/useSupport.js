@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useCallback, useState } from "react";
 import { io } from "socket.io-client";
 import axiosInstance from "../api/axiosInstance";
 import { getAuth } from "../store/slice/auth.slice";
@@ -82,7 +82,7 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
 
   const unreadCount = useMemo(() => alertCount, [alertCount]);
 
-  const fetchTickets = async (params = {}) => {
+  const fetchTickets = useCallback(async (params = {}) => {
     if (!loadTickets) return [];
     setLoadingTickets(true);
     try {
@@ -96,9 +96,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
     } finally {
       setLoadingTickets(false);
     }
-  };
+  }, [loadTickets, toast]);
 
-  const fetchTicketById = async (id) => {
+  const fetchTicketById = useCallback(async (id) => {
     setLoadingTicket(true);
     try {
       const data = await apiGet(`/support/${id}`);
@@ -112,9 +112,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
     } finally {
       setLoadingTicket(false);
     }
-  };
+  }, [toast]);
 
-  const fetchAlertCount = async () => {
+  const fetchAlertCount = useCallback(async () => {
     if (!loadAlerts) return 0;
     if (String(auth?.role || "").toLowerCase() !== "superadmin") return 0;
     setLoadingAlerts(true);
@@ -128,9 +128,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
     } finally {
       setLoadingAlerts(false);
     }
-  };
+  }, [auth?.role, loadAlerts]);
 
-  const fetchSupportContact = async () => {
+  const fetchSupportContact = useCallback(async () => {
     try {
       const data = await apiGet("/support/contact");
       const record = data?.data || null;
@@ -140,9 +140,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
       setContact(null);
       return null;
     }
-  };
+  }, []);
 
-  const createSupportTicket = async (payload = {}) => {
+  const createSupportTicket = useCallback(async (payload = {}) => {
     try {
       const data = await apiPost("/support", payload);
       toast(data?.message || "Support ticket created", "success");
@@ -153,9 +153,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
       toast(error?.response?.data?.message || "Failed to create support ticket", "error");
       return null;
     }
-  };
+  }, [fetchAlertCount, fetchTickets, toast]);
 
-  const updateSupportTicketStatus = async (id, payload = {}) => {
+  const updateSupportTicketStatus = useCallback(async (id, payload = {}) => {
     const targetId = id?._id || id;
     if (!targetId) return null;
     setUpdatingStatus(targetId);
@@ -174,9 +174,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
     } finally {
       setUpdatingStatus(null);
     }
-  };
+  }, [fetchAlertCount, fetchTickets, ticket, toast]);
 
-  const updateSupportTicket = async (id, payload = {}) => {
+  const updateSupportTicket = useCallback(async (id, payload = {}) => {
     const targetId = id?._id || id;
     if (!targetId) return null;
     try {
@@ -191,9 +191,9 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
       toast(error?.response?.data?.message || "Failed to update support ticket", "error");
       return null;
     }
-  };
+  }, [fetchTickets, ticket, toast]);
 
-  const deleteSupportTicket = async (id) => {
+  const deleteSupportTicket = useCallback(async (id) => {
     const targetId = id?._id || id;
     if (!targetId) return null;
     try {
@@ -208,7 +208,7 @@ export function useSupport({ enableRealtime = false, toast = () => {}, loadTicke
       toast(error?.response?.data?.message || "Failed to delete support ticket", "error");
       return null;
     }
-  };
+  }, [fetchTickets, ticket, toast]);
 
   useEffect(() => {
     if (loadTickets) {

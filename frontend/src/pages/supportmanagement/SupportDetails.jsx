@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../component/ui/loader/Loader";
+import BasicModal from "../../component/ui/modal/basicModal";
 import Button from "../../component/ui/button/Button";
 import { useToast } from "../../context/ToastContext";
 import { getAuth } from "../../store/slice/auth.slice";
@@ -137,17 +138,17 @@ export default function SupportDetails() {
 
           <div className="sd-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             {ticket?.status ? <SupportStatusBadge status={ticket.status} /> : null}
-            <button onClick={() => navigate(-1)} style={backButtonStyle}>
+            <Button variant="outlined" size="small" onClick={() => navigate(-1)}>
               Back
-            </button>
+            </Button>
             {isOwner && ticket && ["Open", "InProgress"].includes(normalizeSupportStatus(ticket.status)) && (
               <>
-                <button onClick={() => setShowEdit((value) => !value)} style={editButtonStyle}>
-                  {showEdit ? "Close Edit" : "Edit"}
-                </button>
-                <button onClick={handleDelete} style={deleteButtonStyle}>
+                <Button variant="outlined" size="small" onClick={() => setShowEdit(true)}>
+                  Edit
+                </Button>
+                <Button variant="danger" size="small" onClick={handleDelete}>
                   Delete
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -185,24 +186,6 @@ export default function SupportDetails() {
                 <InfoBox label="Resolved" value={formatDateTime(ticket.resolvedAt)} />
                 <InfoBox label="Current Status" value={getSupportStatusLabel(ticket.status)} />
               </div>
-
-              {showEdit && isOwner && ["Open", "InProgress"].includes(normalizeSupportStatus(ticket.status)) && (
-                <div style={infoCard}>
-                  <SupportTicketForm
-                    onSubmit={handleSaveEdit}
-                    loading={saving}
-                    initialValues={{
-                      subject: ticket.subject || "",
-                      category: ticket.category || "General",
-                      description: ticket.description || "",
-                      contactEmail: ticket.contactEmail || "",
-                      contactPhone: ticket.contactPhone || "",
-                      contactPreference: ticket.contactPreference || "Email",
-                    }}
-                    submitLabel="Save Ticket"
-                  />
-                </div>
-              )}
 
               {isSuperAdmin ? (
                 <div style={infoCard}>
@@ -243,6 +226,27 @@ export default function SupportDetails() {
           )}
         </div>
       </div>
+
+      <BasicModal
+        open={showEdit && isOwner && ticket && ["Open", "InProgress"].includes(normalizeSupportStatus(ticket.status))}
+        onClose={() => setShowEdit(false)}
+        title="Edit Support Ticket"
+        maxWidth="lg"
+      >
+        <SupportTicketForm
+          onSubmit={handleSaveEdit}
+          loading={saving}
+          initialValues={{
+            subject: ticket?.subject || "",
+            category: ticket?.category || "General",
+            description: ticket?.description || "",
+            contactEmail: ticket?.contactEmail || "",
+            contactPhone: ticket?.contactPhone || "",
+            contactPreference: ticket?.contactPreference || "Email",
+          }}
+          submitLabel="Save Ticket"
+        />
+      </BasicModal>
     </div>
   );
 }
@@ -284,39 +288,6 @@ const headerStyle = {
 
 const titleStyle = { margin: 0, fontSize: 18, fontWeight: 700, color: "#0f2044" };
 const subTitleStyle = { margin: "2px 0 0", fontSize: 12.5, color: "#64748b", fontWeight: 500 };
-
-const backButtonStyle = {
-  height: 36,
-  padding: "0 14px",
-  borderRadius: 8,
-  border: "1px solid #dbe3ef",
-  background: "#fff",
-  color: "#0f2044",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const editButtonStyle = {
-  height: 36,
-  padding: "0 14px",
-  borderRadius: 8,
-  border: "1px solid #dbe3ef",
-  background: "#e8f4fd",
-  color: "#1a6fa8",
-  fontWeight: 700,
-  cursor: "pointer",
-};
-
-const deleteButtonStyle = {
-  height: 36,
-  padding: "0 14px",
-  borderRadius: 8,
-  border: "1px solid #fee2e2",
-  background: "#fff5f5",
-  color: "#dc2626",
-  fontWeight: 700,
-  cursor: "pointer",
-};
 
 const textAreaStyle = {
   width: "100%",
