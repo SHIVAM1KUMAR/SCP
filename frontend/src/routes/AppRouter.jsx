@@ -26,6 +26,8 @@ import TestDetails from "../pages/testmanagement/TestDetails";
 import TestStudent from "../pages/testmanagement/TestStudent";
 import TestStudentDetails from "../pages/testmanagement/TestStudentDetails";
 import TestAttempt from "../pages/testmanagement/TestAttempt";
+import Results from "../pages/resultmanagement/Results";
+import ResultDetails from "../pages/resultmanagement/ResultDetails";
 import StudentAdmissions from "../pages/admissions/StudentAdmissions";
 import SuperAdminAdmissions from "../pages/admissions/SuperAdminAdmissions";
 
@@ -38,6 +40,8 @@ const ROLE_ROUTES = {
     { path: "students/:id", element: <StudentDetails /> },
     { path: "counselling", element: <CounsellingSuperAdmin /> },
     { path: "counselling/:id", element: <CounsellingCounsellorDetails /> },
+    { path: "results", element: <Results /> },
+    { path: "results/:id", element: <ResultDetails /> },
     { path: "admissions", element: <SuperAdminAdmissions /> },
     { path: "subscriptions", element: <SubscriptionManagement /> },
     { path: "payments", element: <Payments /> },
@@ -64,6 +68,8 @@ const ROLE_ROUTES = {
     { path: "counselling/session/:id", element: <CounsellingSessionDetails /> },
     { path: "tests", element: <TestSchedule /> },
     { path: "tests/:id", element: <TestDetails /> },
+    { path: "results", element: <Results /> },
+    { path: "results/:id", element: <ResultDetails /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
   Student: [
@@ -78,6 +84,8 @@ const ROLE_ROUTES = {
     { path: "tests", element: <TestStudent /> },
     { path: "tests/:id", element: <TestStudentDetails /> },
     { path: "tests/:id/attempt", element: <TestAttempt /> },
+    { path: "results", element: <Results /> },
+    { path: "results/:id", element: <ResultDetails /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
 };
@@ -137,6 +145,8 @@ const AppRouter = () => {
                   "counselling/:id",
                   "tests",
                   "tests/:id",
+                  "results",
+                  "results/:id",
                 ]);
 
                 if (route.index) {

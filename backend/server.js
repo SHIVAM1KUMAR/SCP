@@ -13,6 +13,7 @@ import collegeRoutes from "./routes/college/collegeRoutes.js";
 import subscriptionRoutes from "./routes/subscription/subscriptionRoutes.js";
 import counsellingRoutes from "./routes/counselling/counsellingRoutes.js";
 import testRoutes from "./routes/tests/testRoutes.js";
+import resultRoutes from "./routes/results/resultRoutes.js";
 
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -57,6 +58,7 @@ app.use("/api/colleges", collegeRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/counselling", counsellingRoutes);
 app.use("/api/tests", testRoutes);
+app.use("/api/results", resultRoutes);
 
 app.set("io", io);
 
