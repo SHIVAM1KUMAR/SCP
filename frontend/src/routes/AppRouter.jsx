@@ -21,6 +21,11 @@ import CounsellingStudent from "../pages/counsellingmanagement/CounsellingStuden
 import CounsellingStudentSessionDetails from "../pages/counsellingmanagement/CounsellingStudentSessionDetails";
 import CounsellingCounsellorDetails from "../pages/counsellingmanagement/CounsellingCounsellorDetails";
 import CounsellingSessionDetails from "../pages/counsellingmanagement/CounsellingSessionDetails";
+import TestSchedule from "../pages/testmanagement/TestSchedule";
+import TestDetails from "../pages/testmanagement/TestDetails";
+import TestStudent from "../pages/testmanagement/TestStudent";
+import TestStudentDetails from "../pages/testmanagement/TestStudentDetails";
+import TestAttempt from "../pages/testmanagement/TestAttempt";
 import StudentAdmissions from "../pages/admissions/StudentAdmissions";
 import SuperAdminAdmissions from "../pages/admissions/SuperAdminAdmissions";
 
@@ -57,6 +62,8 @@ const ROLE_ROUTES = {
     { path: "counselling/schedule", element: <CounsellingScheduleCounselling /> },
     { path: "counselling/:id", element: <CounsellingCounsellorDetails /> },
     { path: "counselling/session/:id", element: <CounsellingSessionDetails /> },
+    { path: "tests", element: <TestSchedule /> },
+    { path: "tests/:id", element: <TestDetails /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
   Student: [
@@ -68,6 +75,9 @@ const ROLE_ROUTES = {
     { path: "applied-colleges/:id", element: <CollegeDetails /> },
     { path: "counselling", element: <CounsellingStudent /> },
     { path: "counselling/:id", element: <CounsellingStudentSessionDetails /> },
+    { path: "tests", element: <TestStudent /> },
+    { path: "tests/:id", element: <TestStudentDetails /> },
+    { path: "tests/:id/attempt", element: <TestAttempt /> },
     { path: "account-settings", element: <AccountSettings /> },
   ],
 };
@@ -125,6 +135,8 @@ const AppRouter = () => {
                   "counselling",
                   "counselling/add-counsellor",
                   "counselling/:id",
+                  "tests",
+                  "tests/:id",
                 ]);
 
                 if (route.index) {

@@ -68,6 +68,13 @@ export const Icons = {
       <path d="M8 9h8M8 12h5" />
     </svg>
   ),
+  Tests: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={18} height={18}>
+      <path d="M8 3h8l4 4v14H4V3z" />
+      <path d="M8 3v4h4" />
+      <path d="M8 13l2 2 4-5" />
+    </svg>
+  ),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -105,6 +112,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 1, label: "College List",    icon: Icons.College,   path: "/student/colleges" },
     { moduleId: 4, label: "Admissions", icon: Icons.Admission, path: "/student/admissions" },
     { moduleId: 14, label: "Counselling",     icon: Icons.Counselling, path: "/student/counselling" },
+    { moduleId: 15, label: "Your Tests Scheduled", icon: Icons.Tests, path: "/student/tests" },
   ],
 
   College: [
@@ -112,6 +120,7 @@ const ALL_MENU_ITEMS = {
     { moduleId: 13, label: "Applied Students", icon: Icons.Admission, path: "/college/applied-students" },
     { moduleId: 14, label: "Add Counsellor", icon: Icons.Counselling, path: "/college/counselling/add-counsellor" },
     { moduleId: 14, label: "Schedule Counselling", icon: Icons.Counselling, path: "/college/counselling/schedule" },
+    { moduleId: 15, label: "Schedule Test", icon: Icons.Tests, path: "/college/tests" },
   ],
 
   Counsellor: [
@@ -129,6 +138,7 @@ const ENABLED_MODULE_IDS = [
   11,  // Subscriptions
   10,  // Payments
   14,  // Counselling
+  15,  // Test Schedule
   4,   // Student applied colleges
   // 5,   // User Management
   // 6,   // Reports
