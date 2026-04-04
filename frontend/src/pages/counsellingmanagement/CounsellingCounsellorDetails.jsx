@@ -17,7 +17,7 @@ const availabilityText = (slots = []) =>
     .filter(Boolean)
     .join(", ") || "-";
 
-export default function CounsellingCounsellorDetails() {
+export default function CounsellingCounsellorDetails({ counsellorId: counsellorIdProp = null, embedded = false } = {}) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -25,6 +25,8 @@ export default function CounsellingCounsellorDetails() {
   const role = String(auth?.role || "").toLowerCase();
   const isCollege = role === "college";
   const isSuperAdmin = role === "superadmin";
+  const isCounsellor = role === "counsellor";
+  const counsellorId = counsellorIdProp || id || auth?.counsellorId || auth?.id || auth?.userMasterId || null;
 
   const {
     counsellors,
@@ -45,7 +47,7 @@ export default function CounsellingCounsellorDetails() {
     const load = async () => {
       setLoadingDetail(true);
       try {
-        const record = await fetchCounsellorById(id);
+        const record = await fetchCounsellorById(counsellorId);
         setCounsellor(record);
       } catch (error) {
         toast(error?.response?.data?.message || error?.message || "Failed to load counsellor", "error");
@@ -53,14 +55,17 @@ export default function CounsellingCounsellorDetails() {
         setLoadingDetail(false);
       }
     };
-    if (id) void load();
-  }, [id]);
+    if (counsellorId) void load();
+  }, [counsellorId]);
 
   const detail = useMemo(
-    () => counsellor || counsellors.find((item) => String(item._id) === String(id)) || null,
-    [counsellor, counsellors, id],
+    () => counsellor || counsellors.find((item) => String(item._id) === String(counsellorId)) || null,
+    [counsellor, counsellors, counsellorId],
   );
-  const backPath = isSuperAdmin ? "/superadmin/counselling" : "/college/counselling/add-counsellor";
+  const backPath = isSuperAdmin ? "/superadmin/counselling" : "/college/counselling/schedule";
+  const pageStyle = embedded
+    ? { background: "transparent", minHeight: "auto", padding: 0, fontFamily: font.body }
+    : { background: "#f4f6fb", minHeight: "100vh", padding: "20px 16px 48px", fontFamily: font.body };
 
   const handleSave = async ({ id: counsellorId, payload }) => {
     const saved = await saveCounsellor({ id: counsellorId, payload });
@@ -72,7 +77,7 @@ export default function CounsellingCounsellorDetails() {
   };
 
   const handleDelete = async () => {
-    await deleteCounsellor(id);
+    await deleteCounsellor(counsellorId);
     navigate(backPath);
   };
 
@@ -86,7 +91,7 @@ export default function CounsellingCounsellorDetails() {
         .cd-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
       `}</style>
 
-      <div style={{ background: "#f4f6fb", minHeight: "100vh", padding: "20px 16px 48px", fontFamily: font.body }}>
+      <div style={pageStyle}>
         <div style={{ background: C.white, borderRadius: 18, border: `1px solid ${C.border}`, boxShadow: C.shadowMd, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ height: 5, background: `linear-gradient(90deg,${C.navy} 0%,${C.gold} 60%,${C.goldLt} 100%)` }} />
           <div style={{ padding: "20px 24px" }}>
@@ -110,15 +115,17 @@ export default function CounsellingCounsellorDetails() {
                 </div>
               </div>
 
-                <div className="cd-actions">
+              <div className="cd-actions">
+                {!embedded && (
                   <ActionBtn label="Back" variant="default" onClick={() => navigate(backPath)} />
-                  {isCollege && (
-                    <>
-                    <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={() => { setEditVersion((v) => v + 1); setShowEditModal(true); }} />
-                    <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} />
-                  </>
-                  )}
-                </div>
+                )}
+                {(isCollege || isCounsellor) && (
+                  <ActionBtn label="Edit" variant="primary" icon="✏️" onClick={() => { setEditVersion((v) => v + 1); setShowEditModal(true); }} />
+                )}
+                {isCollege && (
+                  <ActionBtn label="Delete" variant="danger" icon="🗑" onClick={() => setShowDeleteModal(true)} />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -207,6 +214,7 @@ export default function CounsellingCounsellorDetails() {
           <p style={{ fontSize: 13, color: "#64748b" }}>This action cannot be undone.</p>
         </div>
       </BasicModal>
+
     </>
   );
 }
