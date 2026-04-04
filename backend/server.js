@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (normalizedRole === "college" && collegeId) {
+    if ((normalizedRole === "college" || normalizedRole === "counsellor") && collegeId) {
       socket.join(`counselling:college:${collegeId}`);
       return;
     }

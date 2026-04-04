@@ -26,6 +26,7 @@ export default function CounsellingAddCounsellor() {
   const [showModal, setShowModal] = useState(false);
   const [editingCounsellor, setEditingCounsellor] = useState(null);
   const [modalVersion, setModalVersion] = useState(0);
+  const [savingCounsellor, setSavingCounsellor] = useState(false);
 
   useEffect(() => {
     void fetchCounsellors?.();
@@ -68,9 +69,14 @@ export default function CounsellingAddCounsellor() {
   };
 
   const handleSaved = async ({ id, payload }) => {
-    await saveCounsellor({ id, payload });
-    setShowModal(false);
-    setEditingCounsellor(null);
+    setSavingCounsellor(true);
+    try {
+      await saveCounsellor({ id, payload });
+      setShowModal(false);
+      setEditingCounsellor(null);
+    } finally {
+      setSavingCounsellor(false);
+    }
   };
 
   return (
@@ -165,7 +171,7 @@ export default function CounsellingAddCounsellor() {
         key={`${editingCounsellor?._id || "new"}-${modalVersion}`}
         open={showModal}
         counsellor={editingCounsellor}
-        loading={false}
+        loading={savingCounsellor}
         onClose={() => {
           setShowModal(false);
           setEditingCounsellor(null);

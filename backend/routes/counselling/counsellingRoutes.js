@@ -28,16 +28,16 @@ router.patch("/notifications/:id/read", markNotificationRead);
 router.delete("/notifications/clear", clearNotifications);
 router.get("/student-dashboard", requireRole("Student"), getStudentDashboard);
 
-router.get("/counsellors", requireRole("SuperAdmin", "College"), getCounsellors);
-router.get("/counsellors/:id", requireRole("SuperAdmin", "College"), getCounsellorById);
+router.get("/counsellors", requireRole("SuperAdmin", "College", "Counsellor"), getCounsellors);
+router.get("/counsellors/:id", requireRole("SuperAdmin", "College", "Counsellor"), getCounsellorById);
 router.post("/counsellors", requireRole("College"), createCounsellor);
 router.put("/counsellors/:id", requireRole("College"), updateCounsellor);
 router.delete("/counsellors/:id", requireRole("College"), deleteCounsellor);
 
-router.get("/sessions", requireRole("SuperAdmin", "College", "Student"), getSessions);
-router.get("/sessions/:id", requireRole("SuperAdmin", "College", "Student"), getSessionById);
-router.post("/sessions", requireRole("College"), createSession);
-router.put("/sessions/:id", requireRole("College"), updateSession);
+router.get("/sessions", requireRole("SuperAdmin", "College", "Student", "Counsellor"), getSessions);
+router.get("/sessions/:id", requireRole("SuperAdmin", "College", "Student", "Counsellor"), getSessionById);
+router.post("/sessions", requireRole("College", "Counsellor"), createSession);
+router.put("/sessions/:id", requireRole("College", "Counsellor"), updateSession);
 router.delete("/sessions/:id", requireRole("College"), deleteSession);
 
 export default router;

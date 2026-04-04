@@ -21,6 +21,7 @@ const counsellorSchema = new mongoose.Schema(
     email: { type: String, required: true, trim: true, lowercase: true },
     phone: { type: String, required: true, trim: true },
     department: { type: String, default: "" },
+    password: { type: String, default: "" },
     availability: { type: [availabilitySlotSchema], default: [] },
     status: {
       type: String,
@@ -30,12 +31,13 @@ const counsellorSchema = new mongoose.Schema(
     isDeleted: { type: Boolean, default: false },
     createdByRole: { type: String, default: "College" },
     createdBy: { type: String, default: "" },
+    role: { type: String, default: "counsellor" },
   },
   { timestamps: true }
 );
 
 counsellorSchema.index(
-  { collegeId: 1, email: 1 },
+  { email: 1 },
   { unique: true, partialFilterExpression: { isDeleted: false } }
 );
 

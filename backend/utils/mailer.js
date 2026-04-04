@@ -59,3 +59,28 @@ export const sendCollegeCredentialsEmail = async (to, password) => {
     console.error("Error sending college email:", error);
   }
 };
+
+export const sendCounsellorCredentialsEmail = async (to, password) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject: "Your Counsellor Portal Login Credentials",
+    html: `
+      <h2>Welcome to the Counsellor Portal</h2>
+      <p>Your counselor account is now active.</p>
+      <p>Please use the following credentials to log in:</p>
+      <p><strong>Email:</strong> ${to}</p>
+      <p><strong>Password:</strong> ${password}</p>
+      <br />
+      <p>Regards,</p>
+      <p>Super Admin Team</p>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Counsellor credentials email sent to", to);
+  } catch (error) {
+    console.error("Error sending counsellor email:", error);
+  }
+};

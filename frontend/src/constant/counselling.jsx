@@ -76,8 +76,8 @@ export const buildCounsellorInitialForm = (counsellor) => ({
     : [createEmptyAvailabilitySlot()],
 });
 
-export const buildSessionInitialForm = (session) => ({
-  counsellorId: session?.counsellorId?._id || session?.counsellorId || "",
+export const buildSessionInitialForm = (session, overrides = {}) => ({
+  counsellorId: overrides.counsellorId || session?.counsellorId?._id || session?.counsellorId || "",
   studentId: session?.studentId?._id || session?.studentId || "",
   scheduledDate: session?.scheduledDate || "",
   scheduledTime: session?.scheduledTime || "",

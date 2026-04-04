@@ -77,11 +77,14 @@ const ROOT_REDIRECT = {
   Admin: "/admin/college",
   College: "/college/students",
   Student: "/student/colleges",
+  Counsellor: "/college/counselling/schedule",
 };
 
 const AppRouter = () => {
   const auth = getAuth();
   const role = auth?.role;
+  const blockCounsellor = (element) =>
+    role === "Counsellor" ? <Navigate to="/college/counselling/schedule" replace /> : element;
 
   return useRoutes([
     ...AuthRoutes,
@@ -111,7 +114,27 @@ const AppRouter = () => {
             {
               path: "college",
               element: <Outlet />,
-              children: ROLE_ROUTES.College,
+              children: ROLE_ROUTES.College.map((route) => {
+                if (role !== "Counsellor") return route;
+
+                const blockedPaths = new Set([
+                  "students",
+                  "students/:id",
+                  "applied-students",
+                  "applied-students/:id",
+                  "counselling",
+                  "counselling/add-counsellor",
+                  "counselling/:id",
+                ]);
+
+                if (route.index) {
+                  return { ...route, element: <Navigate to="counselling/schedule" replace /> };
+                }
+                if (blockedPaths.has(route.path)) {
+                  return { ...route, element: blockCounsellor(route.element) };
+                }
+                return route;
+              }),
             },
             {
               path: "student",

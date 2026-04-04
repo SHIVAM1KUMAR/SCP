@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BasicModal from "../../ui/modal/basicModal";
 import Button from "../../ui/button/Button";
 import TextField from "../../ui/textfeild/textFeild.jsx";
@@ -13,14 +13,22 @@ export default function SessionModal({
   counsellors = [],
   students = [],
   loading = false,
+  fixedCounsellorId = "",
+  fixedCounsellorLabel = "",
 }) {
-  const [form, setForm] = useState(buildSessionInitialForm(session));
+  const [form, setForm] = useState(buildSessionInitialForm(session, { counsellorId: fixedCounsellorId }));
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setForm(buildSessionInitialForm(session, { counsellorId: fixedCounsellorId }));
+  }, [session, fixedCounsellorId, open]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.counsellorId || !form.studentId || !form.scheduledDate || !form.scheduledTime) {
-      setError("Please select a counsellor, student, date and time.");
+    const counsellorId = fixedCounsellorId || form.counsellorId;
+
+    if (!counsellorId || !form.studentId || !form.scheduledDate || !form.scheduledTime) {
+      setError(fixedCounsellorId ? "Please select a student, date and time." : "Please select a counsellor, student, date and time.");
       return;
     }
 
@@ -28,7 +36,7 @@ export default function SessionModal({
     await onSubmit?.({
       id: session?._id || null,
       payload: {
-        counsellorId: form.counsellorId,
+        counsellorId,
         studentId: form.studentId,
         scheduledDate: form.scheduledDate,
         scheduledTime: form.scheduledTime,
@@ -70,16 +78,22 @@ export default function SessionModal({
           </div>
         )}
 
-        <Field label="Counsellor">
-          <select value={form.counsellorId} onChange={(e) => setForm((prev) => ({ ...prev, counsellorId: e.target.value }))} style={inputStyle}>
-            <option value="">Select counsellor</option>
-            {counsellors.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {fixedCounsellorId ? (
+          <Field label="Counsellor">
+            <input value={fixedCounsellorLabel || "Assigned counsellor"} readOnly style={{ ...inputStyle, background: "#f8fafc" }} />
+          </Field>
+        ) : (
+          <Field label="Counsellor">
+            <select value={form.counsellorId} onChange={(e) => setForm((prev) => ({ ...prev, counsellorId: e.target.value }))} style={inputStyle}>
+              <option value="">Select counsellor</option>
+              {counsellors.map((item) => (
+                <option key={item._id} value={item._id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         <Field label="Student">
           <select value={form.studentId} onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))} style={inputStyle}>

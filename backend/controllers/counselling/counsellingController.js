@@ -1,14 +1,19 @@
+import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { isValidObjectId } from "mongoose";
 import Counsellor from "../../models/counselling/counsellorModal.js";
 import CounsellingSession from "../../models/counselling/sessionModal.js";
 import CounsellingNotification from "../../models/counselling/notificationModal.js";
 import Student from "../../models/student/studentModal.js";
 import College from "../../models/college/collegeModal.js";
+import SuperAdmin from "../../models/superAdmin.js";
+import { sendCounsellorCredentialsEmail } from "../../utils/mailer.js";
 
 const normalizeRole = (role = "") => String(role).toLowerCase();
 
 const getCollegeId = (req) => req.user?.collegeId || null;
 const getStudentId = (req) => req.user?.id || null;
+const getCounsellorId = (req) => req.user?.counsellorId || req.user?.id || null;
 
 const toPlain = (doc) => {
   if (!doc) return null;
@@ -18,6 +23,7 @@ const toPlain = (doc) => {
 const serializeCounsellor = (doc) => {
   const counsellor = toPlain(doc);
   if (!counsellor) return null;
+  delete counsellor.password;
   return {
     ...counsellor,
     college: counsellor.collegeId && typeof counsellor.collegeId === "object" ? counsellor.collegeId : null,
@@ -48,6 +54,7 @@ const buildScheduledAt = (scheduledDate, scheduledTime) => {
 };
 
 const isObjectIdLike = (value) => Boolean(value) && isValidObjectId(String(value));
+const buildRandomPassword = () => randomBytes(6).toString("base64url");
 
 const normalizeSessionStatus = (status = "") => {
   const value = String(status).trim().toLowerCase();
@@ -114,7 +121,9 @@ const createBroadcastNotifications = async (req, payloads = []) => {
 };
 
 const assertCollegeAccess = (req, collegeId) => {
-  if (normalizeRole(req.user?.role) === "superadmin") return true;
+  const role = normalizeRole(req.user?.role);
+  if (role === "superadmin") return true;
+  if (role === "counsellor") return String(getCollegeId(req)) === String(collegeId);
   return String(getCollegeId(req)) === String(collegeId);
 };
 
@@ -131,6 +140,24 @@ const ensureCounsellorBelongsToCollege = async (counsellorId, collegeId) => {
     isDeleted: { $ne: true },
   });
   return counsellor;
+};
+
+const findAccountByEmail = async (email, currentCounsellorId = null) => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  const [superAdmin, student, college, counsellor] = await Promise.all([
+    SuperAdmin.findOne({ email: normalizedEmail }),
+    Student.findOne({ email: normalizedEmail, isDeleted: { $ne: true } }),
+    College.findOne({ email: normalizedEmail, isDeleted: { $ne: true } }),
+    Counsellor.findOne({
+      email: normalizedEmail,
+      isDeleted: { $ne: true },
+      ...(currentCounsellorId ? { _id: { $ne: currentCounsellorId } } : {}),
+    }),
+  ]);
+
+  return superAdmin || student || college || counsellor;
 };
 
 const ensureStudentExists = async (studentId) => {
@@ -155,7 +182,7 @@ export const getCounsellors = async (req, res) => {
     const collegeId = getCollegeId(req);
     const query = { isDeleted: { $ne: true } };
 
-    if (role === "college") {
+    if (role === "college" || role === "counsellor") {
       if (!collegeId) {
         return res.status(400).json({ success: false, message: "College context missing" });
       }
@@ -191,6 +218,10 @@ export const getCounsellorById = async (req, res) => {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
+    if (normalizeRole(req.user?.role) === "counsellor" && String(getCounsellorId(req)) !== String(counsellor._id)) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
     return res.json({ success: true, data: serializeCounsellor(counsellor) });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -217,7 +248,6 @@ export const createCounsellor = async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase();
     const phone = String(req.body.phone || "").trim();
     const department = String(req.body.department || "").trim();
-    const status = String(req.body.status || "Active");
     const availability = Array.isArray(req.body.availability)
       ? req.body.availability
       : typeof req.body.availability === "string" && req.body.availability
@@ -228,14 +258,13 @@ export const createCounsellor = async (req, res) => {
       return res.status(400).json({ success: false, message: "Name, email and phone are required" });
     }
 
-    const existing = await Counsellor.findOne({
-      collegeId,
-      email,
-      isDeleted: { $ne: true },
-    });
+    const existing = await findAccountByEmail(email);
     if (existing) {
-      return res.status(400).json({ success: false, message: "Counsellor email already exists for this college" });
+      return res.status(400).json({ success: false, message: "Email already exists in the system" });
     }
+
+    const rawPassword = buildRandomPassword();
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
     const counsellor = await Counsellor.create({
       collegeId,
@@ -243,13 +272,21 @@ export const createCounsellor = async (req, res) => {
       email,
       phone,
       department,
+      password: hashedPassword,
       availability,
-      status: status === "Inactive" ? "Inactive" : "Active",
+      status: "Active",
       createdByRole: req.user?.role || "College",
       createdBy: req.user?.email || "",
+      role: "counsellor",
     });
 
-    return res.status(201).json({ success: true, message: "Counsellor added successfully", data: serializeCounsellor(counsellor) });
+    await sendCounsellorCredentialsEmail(email, rawPassword);
+
+    return res.status(201).json({
+      success: true,
+      message: "Counsellor added successfully. Login credentials have been sent to the counsellor email.",
+      data: serializeCounsellor(counsellor),
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
@@ -276,14 +313,9 @@ export const updateCounsellor = async (req, res) => {
     }
 
     const nextEmail = String(req.body.email || counsellor.email).trim().toLowerCase();
-    const duplicate = await Counsellor.findOne({
-      collegeId,
-      email: nextEmail,
-      _id: { $ne: counsellor._id },
-      isDeleted: { $ne: true },
-    });
+    const duplicate = await findAccountByEmail(nextEmail, counsellor._id);
     if (duplicate) {
-      return res.status(400).json({ success: false, message: "Counsellor email already exists for this college" });
+      return res.status(400).json({ success: false, message: "Email already exists in the system" });
     }
 
     counsellor.name = String(req.body.name ?? counsellor.name).trim();
@@ -300,6 +332,7 @@ export const updateCounsellor = async (req, res) => {
           ? JSON.parse(req.body.availability)
           : [];
     }
+    counsellor.role = "counsellor";
 
     await counsellor.save();
     return res.json({ success: true, message: "Counsellor updated successfully", data: serializeCounsellor(counsellor) });
@@ -342,6 +375,8 @@ const fetchSessionsQuery = (req) => {
 
   if (role === "college") {
     query.collegeId = getCollegeId(req);
+  } else if (role === "counsellor") {
+    query.counsellorId = getCounsellorId(req);
   } else if (role === "student") {
     query.studentId = getStudentId(req);
   } else if (role !== "superadmin") {
@@ -352,7 +387,7 @@ const fetchSessionsQuery = (req) => {
     query.status = req.query.status;
   }
 
-  if (req.query.counsellorId) {
+  if (req.query.counsellorId && role !== "counsellor") {
     query.counsellorId = req.query.counsellorId;
   }
 
@@ -395,6 +430,10 @@ export const getSessionById = async (req, res) => {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
+    if (normalizeRole(req.user?.role) === "counsellor" && String(getCounsellorId(req)) !== String(session.counsellorId?._id || session.counsellorId)) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
     return res.json({ success: true, data: serializeSession(session) });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -403,12 +442,14 @@ export const getSessionById = async (req, res) => {
 
 export const createSession = async (req, res) => {
   try {
-    if (normalizeRole(req.user?.role) !== "college") {
-      return res.status(403).json({ success: false, message: "Only college users can schedule sessions" });
+    const role = normalizeRole(req.user?.role);
+    if (!["college", "counsellor"].includes(role)) {
+      return res.status(403).json({ success: false, message: "Only college or counsellor users can schedule sessions" });
     }
 
     const collegeId = getCollegeId(req);
-    const { counsellorId, studentId, scheduledDate, scheduledTime, notes = "" } = req.body || {};
+    const { studentId, scheduledDate, scheduledTime, notes = "" } = req.body || {};
+    const counsellorId = role === "counsellor" ? getCounsellorId(req) : req.body?.counsellorId;
 
     if (!isObjectIdLike(collegeId)) {
       return res.status(400).json({ success: false, message: "College context missing" });
@@ -438,20 +479,20 @@ export const createSession = async (req, res) => {
       return res.status(400).json({ success: false, message: "Valid date and time are required" });
     }
 
-  const session = await CounsellingSession.create({
-    collegeId,
-    counsellorId,
-    studentId,
-    scheduledAt,
-    scheduledDate,
-    scheduledTime,
-    notes,
-    status: ["Completed", "Missed", "Scheduled"].includes(normalizeSessionStatus(req.body?.status))
-      ? normalizeSessionStatus(req.body?.status)
-      : "Scheduled",
-    createdByRole: req.user?.role || "College",
-    createdBy: req.user?.email || "",
-  });
+    const session = await CounsellingSession.create({
+      collegeId,
+      counsellorId,
+      studentId,
+      scheduledAt,
+      scheduledDate,
+      scheduledTime,
+      notes,
+      status: ["Completed", "Missed", "Scheduled"].includes(normalizeSessionStatus(req.body?.status))
+        ? normalizeSessionStatus(req.body?.status)
+        : "Scheduled",
+      createdByRole: req.user?.role || "College",
+      createdBy: req.user?.email || "",
+    });
 
     const createdSession = await CounsellingSession.findById(session._id)
       .populate("collegeId", "collegeName collegeCode email location")
@@ -586,8 +627,8 @@ const notifyRescheduledSession = async (req, session) => {
 export const updateSession = async (req, res) => {
   try {
     const role = normalizeRole(req.user?.role);
-    if (role !== "college") {
-      return res.status(403).json({ success: false, message: "Only college users can update sessions" });
+    if (!["college", "counsellor"].includes(role)) {
+      return res.status(403).json({ success: false, message: "Only college or counsellor users can update sessions" });
     }
 
     const collegeId = getCollegeId(req);
@@ -595,18 +636,22 @@ export const updateSession = async (req, res) => {
     if (!isObjectIdLike(id) || !isObjectIdLike(collegeId)) {
       return res.status(400).json({ success: false, message: "Invalid session selection" });
     }
-    const session = await CounsellingSession.findOne({
+    const sessionQuery = {
       _id: id,
       collegeId,
       isDeleted: { $ne: true },
-    });
+    };
+    if (role === "counsellor") {
+      sessionQuery.counsellorId = getCounsellorId(req);
+    }
+    const session = await CounsellingSession.findOne(sessionQuery);
 
     if (!session) {
       return res.status(404).json({ success: false, message: "Session not found" });
     }
 
     const previousStatus = session.status;
-    const nextCounsellorId = req.body.counsellorId || session.counsellorId;
+    const nextCounsellorId = role === "counsellor" ? getCounsellorId(req) : req.body.counsellorId || session.counsellorId;
     if (!isObjectIdLike(nextCounsellorId)) {
       return res.status(400).json({ success: false, message: "Please select a counsellor" });
     }
@@ -773,7 +818,7 @@ export const getNotifications = async (req, res) => {
     if (role === "superadmin") {
       query.recipientRole = "SuperAdmin";
       query.recipientId = "superadmin";
-    } else if (role === "college") {
+    } else if (role === "college" || role === "counsellor") {
       query.recipientRole = "College";
       query.recipientId = String(getCollegeId(req));
     } else if (role === "student") {
@@ -793,7 +838,7 @@ export const getNotifications = async (req, res) => {
 const canAccessNotification = (req, notification) => {
   const role = normalizeRole(req.user?.role);
   if (role === "superadmin") return notification.recipientRole === "SuperAdmin";
-  if (role === "college") {
+  if (role === "college" || role === "counsellor") {
     return notification.recipientRole === "College" && String(notification.recipientId) === String(getCollegeId(req));
   }
   if (role === "student") {
@@ -830,7 +875,7 @@ export const markAllNotificationsRead = async (req, res) => {
     if (role === "superadmin") {
       query.recipientRole = "SuperAdmin";
       query.recipientId = "superadmin";
-    } else if (role === "college") {
+    } else if (role === "college" || role === "counsellor") {
       query.recipientRole = "College";
       query.recipientId = String(getCollegeId(req));
     } else if (role === "student") {
@@ -855,7 +900,7 @@ export const clearNotifications = async (req, res) => {
     if (role === "superadmin") {
       query.recipientRole = "SuperAdmin";
       query.recipientId = "superadmin";
-    } else if (role === "college") {
+    } else if (role === "college" || role === "counsellor") {
       query.recipientRole = "College";
       query.recipientId = String(getCollegeId(req));
     } else if (role === "student") {

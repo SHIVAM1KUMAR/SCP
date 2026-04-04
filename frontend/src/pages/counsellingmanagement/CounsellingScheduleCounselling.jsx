@@ -37,7 +37,10 @@ const formatTime = (value) => {
 export default function CounsellingScheduleCounselling() {
   const toast = useToast();
   const auth = getAuth();
+  const isCounsellor = auth.role === "Counsellor";
   const currentCollegeId = auth.collegeId || auth.id || auth.userMasterId || null;
+  const currentCounsellorId = auth.counsellorId || auth.id || auth.userMasterId || null;
+  const currentCounsellorLabel = auth.name || "Counsellor";
   const navigate = useNavigate();
   const {
     counsellors,
@@ -63,9 +66,13 @@ export default function CounsellingScheduleCounselling() {
   const [updatingSessionKey, setUpdatingSessionKey] = useState(null);
 
   useEffect(() => {
-    void fetchCounsellors?.();
+    if (!isCounsellor) {
+      void fetchCounsellors?.();
+    }
     void fetchSessions?.();
     void fetchStudents?.();
+    // Run once on mount; the hook functions are recreated on render.
+    // Keeping them in the dependency list would refetch forever.
   }, []);
 
   const filtered = useMemo(() => {
@@ -246,12 +253,14 @@ export default function CounsellingScheduleCounselling() {
       </div>
 
       <SessionModal
-        key={`${editingSession?._id || "new"}-${modalVersion}`}
+        key={`${editingSession?._id || "new"}-${modalVersion}-${isCounsellor ? currentCounsellorId || "self" : "college"}`}
         open={showModal}
         session={editingSession}
-        counsellors={counsellors}
+        counsellors={isCounsellor ? [] : counsellors}
         students={appliedStudents}
         loading={false}
+        fixedCounsellorId={isCounsellor ? currentCounsellorId : ""}
+        fixedCounsellorLabel={isCounsellor ? currentCounsellorLabel : ""}
         onClose={() => {
           setShowModal(false);
           setEditingSession(null);

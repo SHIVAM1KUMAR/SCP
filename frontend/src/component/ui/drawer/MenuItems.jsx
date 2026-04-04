@@ -113,6 +113,10 @@ const ALL_MENU_ITEMS = {
     { moduleId: 14, label: "Add Counsellor", icon: Icons.Counselling, path: "/college/counselling/add-counsellor" },
     { moduleId: 14, label: "Schedule Counselling", icon: Icons.Counselling, path: "/college/counselling/schedule" },
   ],
+
+  Counsellor: [
+    { moduleId: 14, label: "Schedule Counselling", icon: Icons.Counselling, path: "/college/counselling/schedule" },
+  ],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -145,3 +149,4 @@ export const SuperAdminMenuItems = ALL_MENU_ITEMS.SuperAdmin.filter(i => ENABLED
 export const AdminMenuItems      = ALL_MENU_ITEMS.Admin.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
 export const CollegeMenuItems    = ALL_MENU_ITEMS.College.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
 export const StudentMenuItems    = ALL_MENU_ITEMS.Student.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));
+export const CounsellorMenuItems = ALL_MENU_ITEMS.Counsellor.filter(i => ENABLED_MODULE_IDS.includes(i.moduleId));

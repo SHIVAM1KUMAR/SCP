@@ -81,6 +81,10 @@ const handleMenuAction = useCallback((action: 'account-settings' | 'logout') => 
   const role = user?.role?.toLowerCase();
 
   if (action === "account-settings") {
+    if (role === "counsellor") {
+      navigate("/college/account-settings");
+      return;
+    }
     navigate(`/${role}/account-settings`); // ✅ FIXED
   }
 

@@ -3,6 +3,7 @@ import {
   SuperAdminMenuItems,
   AdminMenuItems,
   CollegeMenuItems,
+  CounsellorMenuItems,
   StudentMenuItems,
 } from "../component/ui/drawer/MenuItems";
 import { getAccessibleModuleIds } from "../utils/getAccessibleModuleIds";
@@ -35,6 +36,7 @@ export const useMenuItems = () => {
       role === "SuperAdmin" ? SuperAdminMenuItems :
       role === "Admin"      ? AdminMenuItems :
       role === "College"    ? CollegeMenuItems :
+      role === "Counsellor" ? CounsellorMenuItems :
       role === "Student"    ? StudentMenuItems : [];
 
     const accessibleModuleIds = getAccessibleModuleIds(permissions);

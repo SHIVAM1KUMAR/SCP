@@ -7,6 +7,7 @@ const ROLE_MAP = {
   superadmin: "SuperAdmin",
   college: "College",
   student: "Student",
+  counsellor: "Counsellor",
 };
 
 const decodeJWT = (token) => {
@@ -46,6 +47,7 @@ export const useAuth = () => {
         email: decoded?.email || user?.email || email,
         role: normalizedRole,
         collegeId: decoded?.collegeId || user?.collegeId || null,
+        counsellorId: decoded?.counsellorId || user?.counsellorId || null,
         studentId: decoded?.studentId || user?.studentId || null,
       })
     );

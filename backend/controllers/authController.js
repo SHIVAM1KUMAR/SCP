@@ -3,6 +3,7 @@ import generateToken from "../utils/generateToken.js";
 import SuperAdmin from "../models/superAdmin.js";
 import Student from "../models/student/studentModal.js";
 import College from "../models/college/collegeModal.js";
+import Counsellor from "../models/counselling/counsellorModal.js";
 
 const BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
 
@@ -45,10 +46,21 @@ const toPublicFileUrl = (value) => {
 
 const getDisplayName = (user) =>
   [user?.firstName, user?.middleName, user?.lastName].filter(Boolean).join(" ").trim() ||
+  user?.collegeName ||
   user?.name ||
+  user?.studentName ||
   "Super Admin";
 
-const serializeSuperAdmin = (user) => {
+const getDefaultRoleName = (role) => {
+  const normalizedRole = String(role || "").toLowerCase();
+  if (normalizedRole === "superadmin") return "Super Admin";
+  if (normalizedRole === "counsellor") return "Counsellor";
+  if (normalizedRole === "college") return "College";
+  if (normalizedRole === "student") return "Student";
+  return "User";
+};
+
+const serializeProfileUser = (user, role = "") => {
   if (!user) return null;
   const obj = user.toObject ? user.toObject({ virtuals: true }) : { ...user };
   return {
@@ -56,7 +68,7 @@ const serializeSuperAdmin = (user) => {
     userMasterId: obj.userMasterId || obj._id?.toString?.() || String(obj._id || ""),
     name: getDisplayName(obj),
     fullName: getDisplayName(obj),
-    roleName: obj.roleName || "Super Admin",
+    roleName: obj.roleName || getDefaultRoleName(role || obj.role),
     imageUrl: obj.imageUrl ? toPublicFileUrl(obj.imageUrl) : "",
   };
 };
@@ -66,6 +78,7 @@ const getProfileModelForRole = (role) => {
   if (normalized === "superadmin") return SuperAdmin;
   if (normalized === "student") return Student;
   if (normalized === "college") return College;
+  if (normalized === "counsellor") return Counsellor;
   return null;
 };
 
@@ -104,6 +117,15 @@ const ensureSeedSuperAdmin = async () => {
   return admin;
 };
 
+const serializeLoggedInUser = (user, role = "") => {
+  const profile = serializeProfileUser(user, role);
+  if (!profile) return null;
+  return {
+    ...profile,
+    role: profile.role || role,
+  };
+};
+
 export const superAdminLogin = async (req, res) => {
   const { email, password } = req.body || {};
   const normalizedEmail = toText(email).toLowerCase();
@@ -119,7 +141,7 @@ export const superAdminLogin = async (req, res) => {
         message: "Super Admin Logged In",
         role: "SuperAdmin",
         token,
-        user: serializeSuperAdmin(admin),
+        user: serializeLoggedInUser(admin, "SuperAdmin"),
       });
     }
 
@@ -137,7 +159,7 @@ export const superAdminLogin = async (req, res) => {
         message: "Super Admin Logged In",
         role: "SuperAdmin",
         token,
-        user: serializeSuperAdmin(admin),
+        user: serializeLoggedInUser(admin, "SuperAdmin"),
       });
     }
 
@@ -147,7 +169,32 @@ export const superAdminLogin = async (req, res) => {
       if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
       const token = generateToken({ role: "Student", email: normalizedEmail, id: student._id });
-      return res.json({ message: "Student Logged In", role: "Student", token, user: student });
+      return res.json({
+        message: "Student Logged In",
+        role: "Student",
+        token,
+        user: serializeLoggedInUser(student, "Student"),
+      });
+    }
+
+    const counsellor = await Counsellor.findOne({ email: normalizedEmail });
+    if (counsellor && !counsellor.isDeleted && counsellor.status === "Active") {
+      const isMatch = await bcrypt.compare(password, counsellor.password);
+      if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+
+      const token = generateToken({
+        role: "Counsellor",
+        email: normalizedEmail,
+        id: counsellor._id,
+        collegeId: counsellor.collegeId,
+        counsellorId: counsellor._id,
+      });
+      return res.json({
+        message: "Counsellor Logged In",
+        role: "Counsellor",
+        token,
+        user: serializeLoggedInUser(counsellor, "Counsellor"),
+      });
     }
 
     const college = await College.findOne({ email: normalizedEmail });
@@ -156,7 +203,12 @@ export const superAdminLogin = async (req, res) => {
       if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
       const token = generateToken({ role: "College", email: normalizedEmail, collegeId: college._id });
-      return res.json({ message: "College Logged In", role: "College", token, user: college });
+      return res.json({
+        message: "College Logged In",
+        role: "College",
+        token,
+        user: serializeLoggedInUser(college, "College"),
+      });
     }
 
     return res.status(401).json({ message: "Invalid credentials" });
@@ -234,7 +286,7 @@ export const getMyProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
 
-    return res.json({ success: true, data: serializeSuperAdmin(user) });
+    return res.json({ success: true, data: serializeProfileUser(user, role) });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
   }
@@ -251,6 +303,7 @@ export const updateMyProfile = async (req, res) => {
 
     const currentEmail = toText(email).toLowerCase();
     const body = req.body || {};
+    const defaultRoleName = getDefaultRoleName(role);
 
     let user = await Model.findOne({ email: currentEmail });
     if (!user && String(role).toLowerCase() === "superadmin") {
@@ -277,7 +330,7 @@ export const updateMyProfile = async (req, res) => {
     user.name = getDisplayName(user);
     user.phoneNumber = toOptionalText(body.phoneNumber || body.phone || user.phoneNumber);
     user.gender = toOptionalText(body.gender || user.gender);
-    user.roleName = toOptionalText(body.roleName || user.roleName) || "Super Admin";
+    user.roleName = toOptionalText(body.roleName || user.roleName) || defaultRoleName;
     user.npiNumber = toOptionalText(body.npiNumber || user.npiNumber);
     user.employmentType = toOptionalText(body.employmentType || user.employmentType);
     user.dob = toOptionalText(body.dob || user.dob);
@@ -290,7 +343,7 @@ export const updateMyProfile = async (req, res) => {
     return res.json({
       success: true,
       message: "Profile updated successfully",
-      data: serializeSuperAdmin(user),
+      data: serializeProfileUser(user, role),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -328,7 +381,7 @@ export const updateMyProfilePicture = async (req, res) => {
     return res.json({
       success: true,
       message: "Profile picture updated",
-      data: serializeSuperAdmin(user),
+      data: serializeProfileUser(user, role),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -374,7 +427,7 @@ export const setPrimaryAddress = async (req, res) => {
     return res.json({
       success: true,
       message: "Primary address updated",
-      data: serializeSuperAdmin(user),
+      data: serializeProfileUser(user, role),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
