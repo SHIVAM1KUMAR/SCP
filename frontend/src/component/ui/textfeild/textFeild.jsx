@@ -45,7 +45,7 @@ function HelpText({ errorMessage, helperText }) {
   if (!errorMessage && !helperText) return null;
   return (
     <div style={{ fontSize: 12, marginTop: 4, color: errorMessage ? "#dc3545" : "#94a3b8" }}>
-      {errorMessage || helperText}
+      {typeof errorMessage === "string" && errorMessage.trim() ? errorMessage : helperText}
     </div>
   );
 }
@@ -74,6 +74,7 @@ const TextField = forwardRef(({
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   const inputId = `tf-${name || label || "field"}`;
+  const resolvedStandaloneError = typeof error === "string" ? error : "";
 
   const renderStandard = ({
     currentValue,
@@ -192,7 +193,7 @@ const TextField = forwardRef(({
         name={name}
         control={control}
         render={({ field, fieldState }) => {
-          const errorMessage = fieldState.error?.message || error;
+          const resolvedErrorMessage = fieldState.error?.message || resolvedStandaloneError;
 
           if (isPhoneNumber) {
             return (
@@ -220,13 +221,13 @@ const TextField = forwardRef(({
                   placeholder={placeholder || "(___) ___-____"}
                   disabled={disabled}
                   required={required}
-                  style={getInputStyle(!!errorMessage)}
+                  style={getInputStyle(!!resolvedErrorMessage || !!error)}
                   onFocus={(e) => {
-                    e.target.style.borderColor = errorMessage ? "#dc3545" : "#1a6fa8";
+                    e.target.style.borderColor = (resolvedErrorMessage || error) ? "#dc3545" : "#1a6fa8";
                     onFocus?.(e);
                   }}
                 />
-                <HelpText errorMessage={errorMessage} helperText={helperText} />
+                <HelpText errorMessage={resolvedErrorMessage} helperText={helperText} />
               </div>
             );
           }
@@ -240,7 +241,7 @@ const TextField = forwardRef(({
             },
             focus: onFocus,
             inputRef: field.ref,
-            errorMessage,
+            errorMessage: resolvedErrorMessage,
           });
         }}
       />
@@ -253,7 +254,7 @@ const TextField = forwardRef(({
     blur: onBlur,
     focus: onFocus,
     inputRef: undefined,
-    errorMessage: error,
+    errorMessage: resolvedStandaloneError,
   });
 });
 

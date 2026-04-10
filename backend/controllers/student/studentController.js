@@ -366,11 +366,17 @@ export const addStudent = async (req, res) => {
     }
 
     const student = new Student(payload);
+    const rawPassword = Math.random().toString(36).slice(-8);
+    const salt = await bcrypt.genSalt(10);
+    student.password = await bcrypt.hash(rawPassword, salt);
+    student.status = "Active";
     await student.save();
+
+    await sendCredentialsEmail(student.email, rawPassword);
 
     res.status(201).json({
       success: true,
-      message: "Student added successfully",
+      message: "Student added successfully. Credentials sent via email.",
       data: attachStudentViews(student),
     });
   } catch (error) {

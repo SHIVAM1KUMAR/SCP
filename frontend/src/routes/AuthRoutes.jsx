@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import AuthLayout    from "../layouts/AuthLayout";
 import Login         from "../pages/login/Login";
+import Register      from "../pages/register/register";
 import ForgotPassword from "../pages/forgetpassword/forgetPassword";
 import ResetPassword  from "../pages/reset-password/resetPassword";
 import VerifyOtp      from "../pages/verify-otp/verifyOtp";
@@ -18,11 +19,17 @@ export const AuthRoutes = [
         children: [
           { index: true,             element: <Navigate to="login" replace /> },
           { path: "login",           element: <Login /> },
+          { path: "register",        element: <Register /> },
           { path: "forgot-password", element: <ForgotPassword /> },
           { path: "reset-password",  element: <ResetPassword /> },
           { path: "verify-otp",      element: <VerifyOtp /> },
         ],
       },
+      { path: "/login", element: <Navigate to="/auth/login" replace /> },
+      { path: "/register", element: <Navigate to="/auth/register" replace /> },
+      { path: "/forgot-password", element: <Navigate to="/auth/forgot-password" replace /> },
+      { path: "/reset-password", element: <Navigate to="/auth/reset-password" replace /> },
+      { path: "/verify-otp", element: <Navigate to="/auth/verify-otp" replace /> },
     ],
   },
 ];

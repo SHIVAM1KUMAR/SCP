@@ -680,7 +680,7 @@ const StudentRegistrationForm = forwardRef(function StudentRegistrationForm(
           <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.75, margin: "0 0 26px" }}>
             {isEdit
               ? <>Details for <strong>{vals.firstName} {vals.lastName}</strong> have been updated successfully.</>
-              : <>Application for <strong>{vals.firstName} {vals.lastName}</strong> has been received. The college will review your profile.</>}
+              : <>Application for <strong>{vals.firstName} {vals.lastName}</strong> has been received. Your login credentials have been sent to your email, so you can sign in right away.</>}
           </p>
           <Button variant="primary" onClick={onClose}>
             Close
@@ -696,6 +696,7 @@ const StudentRegistrationForm = forwardRef(function StudentRegistrationForm(
       open
       onClose={!loading ? onClose : undefined}
       maxWidth={840}
+      bodyScrollable={false}
     >
       <div style={{ position: "relative", display: "flex", flexDirection: "column", height: "96vh", maxHeight: "96vh", overflow: "hidden" }}>
 

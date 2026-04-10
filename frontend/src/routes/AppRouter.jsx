@@ -116,7 +116,7 @@ const AppRouter = () => {
     ...AuthRoutes,
     {
       path: "/",
-      element: role ? <ProtectedRoute /> : <Navigate to="/login" replace />,
+      element: role ? <ProtectedRoute /> : <Navigate to="/auth/login" replace />,
       children: [
         {
           element: <MainLayout />,
@@ -124,7 +124,7 @@ const AppRouter = () => {
             {
               index: true,
               element: (
-                <Navigate to={ROOT_REDIRECT[role] ?? "/login"} replace />
+                <Navigate to={ROOT_REDIRECT[role] ?? "/auth/login"} replace />
               ),
             },
             {
