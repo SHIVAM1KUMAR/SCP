@@ -1,7 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCounselling } from "../../../hooks/useCounselling";
+import { useSupport } from "../../../hooks/useSupport";
 import { useToast } from "../../../context/ToastContext";
+import { getAuth } from "../../../store/slice/auth.slice";
 
 const BellIcon = ({ filled }) => (
   <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.8} width={20} height={20}>
@@ -59,16 +62,27 @@ function NotificationBanner({ type = "info", message, style = {} }) {
   );
 }
 
-function NotificationMenuView() {
+function NotificationMenuView({ badgeCount = null } = {}) {
   const toast = useToast();
+  const navigate = useNavigate();
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [socketEnabled, setSocketEnabled] = useState(true);
+  const auth = getAuth();
+  const role = String(auth?.role || "").toLowerCase();
+  const isSuperAdmin = role === "superadmin";
+  const silentToast = useMemo(() => () => {}, []);
 
   const { notifications, unreadCount, fetchNotifications, markNotificationRead, markAllNotificationsRead, clearNotifications } = useCounselling({
     enableRealtime: socketEnabled,
     toast,
+  });
+  const { tickets: supportTickets } = useSupport({
+    enableRealtime: socketEnabled && isSuperAdmin,
+    toast: silentToast,
+    loadTickets: isSuperAdmin,
+    loadAlerts: false,
   });
 
   useEffect(() => {
@@ -87,6 +101,12 @@ function NotificationMenuView() {
   }, []);
 
   const handleNotificationClick = async (notification) => {
+    if (notification.kind === "support") {
+      setOpen(false);
+      setSelected(null);
+      navigate(`/superadmin/support/${notification.ticketId}`);
+      return;
+    }
     setSelected(notification);
     if (!notification.isRead) {
       await markNotificationRead(notification._id);
@@ -101,6 +121,27 @@ function NotificationMenuView() {
     await clearNotifications();
     setSelected(null);
   };
+
+  const supportNotificationItems = isSuperAdmin
+    ? (supportTickets || [])
+        .filter((ticket) => String(ticket.status || "").toLowerCase() === "open")
+        .map((ticket) => ({
+          _id: `support-${ticket._id}`,
+          kind: "support",
+          ticketId: ticket._id,
+          title: `Support Ticket: ${ticket.subject || ticket.ticketNo || "New ticket"}`,
+          message: `${ticket.creator?.name || ticket.creatorRole || "A user"} raised a support ticket${ticket.category ? ` in ${ticket.category}` : ""}.`,
+          createdAt: ticket.createdAt,
+          type: "support",
+          category: ticket.category || "Support",
+          recipientRole: "SuperAdmin",
+          isRead: false,
+        }))
+    : [];
+
+  const mergedNotifications = [...notifications.map((notification) => ({ ...notification, kind: "counselling" })), ...supportNotificationItems]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const visibleCount = unreadCount + supportNotificationItems.length;
 
   return (
     <div className="position-relative" ref={menuRef}>
@@ -122,8 +163,12 @@ function NotificationMenuView() {
           transition: "transform 0.15s ease",
         }}
       >
-        <BellIcon filled={unreadCount > 0} />
-        {unreadCount > 0 && (
+        {badgeCount !== null ? (
+          <BellIcon filled={badgeCount > 0} />
+        ) : (
+          <BellIcon filled={unreadCount > 0} />
+        )}
+        {(badgeCount !== null ? badgeCount : unreadCount) > 0 && (
           <span
             style={{
               position: "absolute",
@@ -142,7 +187,7 @@ function NotificationMenuView() {
               border: "2px solid #fff",
             }}
           >
-            {unreadCount > 9 ? "9+" : unreadCount}
+            {(badgeCount !== null ? badgeCount : unreadCount) > 9 ? "9+" : (badgeCount !== null ? badgeCount : unreadCount)}
           </span>
         )}
       </button>
@@ -171,9 +216,9 @@ function NotificationMenuView() {
               <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f3f7", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b" }}>Notifications</span>
-                  {unreadCount > 0 && (
+                  {(badgeCount !== null ? badgeCount : unreadCount) > 0 && (
                     <span style={{ background: "#1a6fa8", color: "#fff", borderRadius: 20, fontSize: 10, fontWeight: 700, padding: "1px 7px" }}>
-                      {unreadCount}
+                      {visibleCount > 9 ? "9+" : visibleCount}
                     </span>
                   )}
                 </div>
@@ -195,14 +240,14 @@ function NotificationMenuView() {
               </div>
 
               <div style={{ overflowY: "auto", flex: 1 }}>
-                {notifications.length === 0 ? (
+                {mergedNotifications.length === 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", gap: 8 }}>
                     <BellIcon filled={false} />
                     <span style={{ fontSize: 13, fontWeight: 500, color: "#64748b" }}>No notifications</span>
                     <span style={{ fontSize: 12, color: "#94a3b8", textAlign: "center" }}>Nothing to display right now.</span>
                   </div>
                 ) : (
-                  notifications.map((notification, index) => (
+                  mergedNotifications.map((notification, index) => (
                     <div key={notification._id || `${notification.title}-${index}`}>
                       <button
                         onClick={() => handleNotificationClick(notification)}
@@ -213,16 +258,18 @@ function NotificationMenuView() {
                           display: "flex",
                           gap: 10,
                           alignItems: "flex-start",
-                          background: notification.isRead ? "transparent" : "rgba(26,111,168,0.05)",
-                          borderLeft: `3px solid ${notification.isRead ? "transparent" : "#1a6fa8"}`,
+                          background: notification.kind === "support" ? "rgba(15,32,68,0.04)" : notification.isRead ? "transparent" : "rgba(26,111,168,0.05)",
+                          borderLeft: `3px solid ${notification.kind === "support" ? "#0f2044" : notification.isRead ? "transparent" : "#1a6fa8"}`,
                           border: "none",
                           textAlign: "left",
                           transition: "background 0.15s",
                         }}
                       >
                         <div style={{ paddingTop: 4, flexShrink: 0 }}>
-                          {!notification.isRead ? (
+                          {!notification.isRead && notification.kind !== "support" ? (
                             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a6fa8" }} />
+                          ) : notification.kind === "support" ? (
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0f2044" }} />
                           ) : (
                             <div style={{ width: 8, height: 8 }} />
                           )}
@@ -230,7 +277,7 @@ function NotificationMenuView() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
                             <span style={{ fontSize: 13, fontWeight: notification.isRead ? 500 : 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
-                              {notification.title || "Counselling update"}
+                              {notification.title || (notification.kind === "support" ? "Support Ticket" : "Counselling update")}
                             </span>
                             <span style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }}>
                               {formatDateTime(notification.createdAt)}
@@ -239,6 +286,11 @@ function NotificationMenuView() {
                           <span style={{ fontSize: 11, color: "#64748b", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                             {notification.message}
                           </span>
+                          {notification.kind === "support" && (
+                            <span style={{ display: "inline-flex", marginTop: 8, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#0f2044", background: "#e8eef8", borderRadius: 999, padding: "3px 8px" }}>
+                              Support
+                            </span>
+                          )}
                         </div>
                       </button>
                       {index < notifications.length - 1 && <hr style={{ margin: "0 16px", borderColor: "#f0f3f7", opacity: 0.6 }} />}
@@ -302,9 +354,9 @@ const actionButtonStyle = {
 };
 
 export default function NotificationMenu(props = {}) {
-  const { message, type, style } = props;
+  const { message, type, style, badgeCount = null } = props;
   if (message !== undefined) {
     return <NotificationBanner type={type} message={message} style={style} />;
   }
-  return <NotificationMenuView />;
+  return <NotificationMenuView badgeCount={badgeCount} />;
 }

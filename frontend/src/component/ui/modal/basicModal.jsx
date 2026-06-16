@@ -29,6 +29,7 @@ export default function BasicModal({
   maxWidth  = "sm",
   fullWidth = true,
   disableClose = false,
+  bodyScrollable = true,
 }) {
   // Lock body scroll when open (replaces MUI disableScrollLock=false behaviour)
   useEffect(() => {
@@ -146,7 +147,7 @@ export default function BasicModal({
             padding:      "24px",
             borderTop:    title   ? "none" : "1px solid #f1f5f9",
             borderBottom: actions ? "1px solid #f1f5f9" : "none",
-            overflowY:    "auto",
+            overflowY:    bodyScrollable ? "auto" : "hidden",
             minHeight:    0,
             flex:         "1 1 auto",
             maxHeight:    "none",

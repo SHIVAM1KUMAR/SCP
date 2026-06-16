@@ -5,7 +5,7 @@ import { Navigate, Outlet } from "react-router-dom";
 // AmniCare used Redux state.auth.isAuthenticated
 // We use localStorage token (same logic, no Redux needed)
 // ─────────────────────────────────────────────────────────────────────────────
-export const ProtectedRoute = ({ redirectTo = "/login" }) => {
+export const ProtectedRoute = ({ redirectTo = "/auth/login" }) => {
   const token = localStorage.getItem("token");
   const isAuthenticated = !!token;
 

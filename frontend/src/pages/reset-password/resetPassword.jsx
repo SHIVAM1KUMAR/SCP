@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import AuthCard from "../auth/authCard";
 import ResetForm from "../../component/forms/reset-password/ResetForm";
 
@@ -7,9 +8,12 @@ import ResetForm from "../../component/forms/reset-password/ResetForm";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ResetPassword = () => {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || "";
+
   return (
     <AuthCard>
-      <ResetForm />
+      <ResetForm token={token} />
     </AuthCard>
   );
 };

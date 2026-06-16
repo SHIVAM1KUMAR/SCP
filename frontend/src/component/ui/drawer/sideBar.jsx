@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DrawerHeader } from "./drawerHeader";
 import { getMenuByRole } from "./MenuItems";
-import { useSupport } from "../../../hooks/useSupport";
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 // Logo import removed — using text logo instead to avoid missing asset error
@@ -153,11 +152,6 @@ function SidebarContent({ open, handleDrawerClose, handleDrawerOpen, menuItems, 
 export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 960);
-  const { alertCount: supportAlertCount, fetchAlertCount } = useSupport({
-    enableRealtime: true,
-    loadTickets: false,
-    loadAlerts: true,
-  });
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 960);
@@ -167,13 +161,7 @@ export default function Sidebar({ open, handleDrawerClose, handleDrawerOpen }) {
 
   const user      = (() => { try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; } })();
   const menuItems = getMenuByRole(user.role);
-  const badgeMap = String(user.role || "").toLowerCase() === "superadmin" ? { 17: supportAlertCount } : {};
-
-  useEffect(() => {
-    if (String(user.role || "").toLowerCase() === "superadmin") {
-      void fetchAlertCount?.();
-    }
-  }, [fetchAlertCount, user.role]);
+  const badgeMap = {};
 
   const handleNavigation = (path) => {
     navigate(path || "/");

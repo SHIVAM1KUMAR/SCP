@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
 import TextField from "../../component/ui/textfeild/textFeild";
 import Button from "../../component/ui/button/Button";
 
@@ -385,6 +385,50 @@ export default function Login() {
               </Button>
             </form>
 
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              marginTop: 18,
+              flexWrap: "wrap",
+              fontSize: 13,
+            }}>
+              <button
+                type="button"
+                onClick={() => navigate("/auth/register")}
+                style={{
+                  color: "#1a6fa8",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "inherit",
+                }}
+              >
+                Create account
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/auth/forgot-password")}
+                style={{
+                  color: "#64748b",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "inherit",
+                }}
+              >
+                Forgot password?
+              </button>
+            </div>
             <div className="login-footer">
               © {new Date().getFullYear()} EduAdmit. All rights reserved.
             </div>
@@ -395,3 +439,4 @@ export default function Login() {
     </>
   );
 }
+

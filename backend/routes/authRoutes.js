@@ -5,7 +5,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import {
   changePassword,
+  forgotPassword,
   getMyProfile,
+  resetPassword,
+  verifyResetOtp,
   setPrimaryAddress,
   superAdminLogin,
   updateMyProfile,
@@ -44,6 +47,9 @@ const upload = multer({
 });
 
 router.post("/superadmin/login", superAdminLogin);
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-otp", verifyResetOtp);
+router.post("/reset-password", resetPassword);
 router.put("/change-password", protect, changePassword);
 router.get("/profile", protect, getMyProfile);
 router.put("/profile", protect, updateMyProfile);

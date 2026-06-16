@@ -1,9 +1,11 @@
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import generateToken from "../utils/generateToken.js";
 import SuperAdmin from "../models/superAdmin.js";
 import Student from "../models/student/studentModal.js";
 import College from "../models/college/collegeModal.js";
 import Counsellor from "../models/counselling/counsellorModal.js";
+import { sendPasswordResetOtpEmail } from "../utils/mailer.js";
 
 const BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
 
@@ -60,6 +62,15 @@ const getDefaultRoleName = (role) => {
   return "User";
 };
 
+const normalizeAuthRole = (role) => {
+  const normalizedRole = String(role || "").trim().toLowerCase();
+  if (["superadmin", "super admin", "super-admin"].includes(normalizedRole)) return "superadmin";
+  if (normalizedRole === "student") return "student";
+  if (normalizedRole === "college") return "college";
+  if (["counsellor", "counselor"].includes(normalizedRole)) return "counsellor";
+  return "";
+};
+
 const serializeProfileUser = (user, role = "") => {
   if (!user) return null;
   const obj = user.toObject ? user.toObject({ virtuals: true }) : { ...user };
@@ -81,6 +92,14 @@ const getProfileModelForRole = (role) => {
   if (normalized === "counsellor") return Counsellor;
   return null;
 };
+
+const getPublicBaseUrl = () => process.env.CLIENT_URL || "http://localhost:5173";
+
+const passwordResetOtpStore = new Map();
+
+const buildResetOtpKey = (role, email) => `${normalizeAuthRole(role)}:${toText(email).toLowerCase()}`;
+
+const generateResetOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
 const buildSuperAdminPassword = async (plainPassword) => {
   const salt = await bcrypt.genSalt(10);
@@ -260,6 +279,140 @@ export const changePassword = async (req, res) => {
     await user.save();
 
     return res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email, role } = req.body || {};
+    const normalizedEmail = toText(email).toLowerCase();
+    const normalizedRole = normalizeAuthRole(role);
+
+    if (!normalizedEmail || !normalizedRole) {
+      return res.status(400).json({ message: "Email and role are required" });
+    }
+
+    const Model = getProfileModelForRole(normalizedRole);
+    if (!Model) {
+      return res.status(400).json({ message: "Unsupported account role" });
+    }
+
+    const user = await Model.findOne({
+      email: normalizedEmail,
+      isDeleted: { $ne: true },
+    });
+
+    if (user) {
+      const otp = generateResetOtp();
+      const key = buildResetOtpKey(normalizedRole, normalizedEmail);
+      passwordResetOtpStore.set(key, {
+        otp,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      });
+      await sendPasswordResetOtpEmail(normalizedEmail, getDefaultRoleName(normalizedRole), otp);
+    }
+
+    return res.json({
+      success: true,
+      message: "If the account exists, an OTP has been sent to the registered email address.",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, role, otp } = req.body || {};
+    const normalizedEmail = toText(email).toLowerCase();
+    const normalizedRole = normalizeAuthRole(role);
+    const normalizedOtp = toText(otp);
+
+    if (!normalizedEmail || !normalizedRole || !normalizedOtp) {
+      return res.status(400).json({ message: "Email, role, and OTP are required" });
+    }
+
+    const key = buildResetOtpKey(normalizedRole, normalizedEmail);
+    const record = passwordResetOtpStore.get(key);
+
+    if (!record) {
+      return res.status(400).json({ message: "OTP expired or not requested" });
+    }
+
+    if (record.expiresAt < Date.now()) {
+      passwordResetOtpStore.delete(key);
+      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+    }
+
+    if (record.otp !== normalizedOtp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    const resetToken = jwt.sign(
+      {
+        email: normalizedEmail,
+        role: normalizedRole,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" },
+    );
+
+    passwordResetOtpStore.delete(key);
+
+    return res.json({
+      success: true,
+      message: "OTP verified successfully",
+      data: {
+        resetToken,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body || {};
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password are required" });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+
+    const normalizedRole = normalizeAuthRole(decoded?.role);
+    const normalizedEmail = toText(decoded?.email).toLowerCase();
+    const Model = getProfileModelForRole(normalizedRole);
+
+    if (!Model || !normalizedEmail) {
+      return res.status(400).json({ message: "Invalid reset token" });
+    }
+
+    const user = await Model.findOne({
+      email: normalizedEmail,
+      isDeleted: { $ne: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    user.password = await buildSuperAdminPassword(newPassword);
+    await user.save();
+
+    return res.json({ message: "Password reset successfully" });
   } catch (error) {
     return res.status(500).json({ message: "Server Error", error: error.message });
   }

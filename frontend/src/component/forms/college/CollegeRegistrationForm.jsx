@@ -268,7 +268,22 @@ function StepCourses() {
       setAdding(false);
     } catch (err) {
       const e = {};
-      err.inner.forEach((i) => (e[i.path] = i.message));
+      const issues = Array.isArray(err?.inner) && err.inner.length > 0
+        ? err.inner
+        : err?.path
+          ? [{ path: err.path, message: err.message }]
+          : [];
+
+      issues.forEach((issue) => {
+        if (issue?.path) {
+          e[issue.path] = issue.message || "Invalid value";
+        }
+      });
+
+      if (!Object.keys(e).length && err?.message) {
+        e.fees = err.message;
+      }
+
       setDraftErr(e);
     }
   };
@@ -806,7 +821,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
           <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.75, margin: "0 0 26px" }}>
             {isEdit
               ? <>Details for <strong>{getValues("collegeName")}</strong> have been updated successfully.</>
-              : <>Your application for <strong>{getValues("collegeName")}</strong> with {getValues("courses")?.length || 0} course(s) has been received.</>}
+              : <>Your application for <strong>{getValues("collegeName")}</strong> with {getValues("courses")?.length || 0} course(s) has been received. Check your email for the confirmation message, and credentials will be sent after approval.</>}
           </p>
           <Button variant="primary" onClick={onClose}>
             Close
@@ -822,7 +837,7 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
       open
       onClose={!loading ? onClose : undefined}
       maxWidth={840}
-      /* pass whatever props your Modal accepts for full-height scrollable content */
+      bodyScrollable={false}
     >
       <div style={{ position: "relative", display: "flex", flexDirection: "column", height: "96vh", maxHeight: "96vh", overflow: "hidden" }}>
 
@@ -943,3 +958,4 @@ const CollegeRegistrationForm = forwardRef(function CollegeRegistrationForm(
 });
 
 export default CollegeRegistrationForm;
+
